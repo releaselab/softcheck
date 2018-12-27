@@ -1,8 +1,4 @@
-stages:
-    - build
-    - test
-
-build-4.07:
+ocaml-4.07:
     stage: build
     image: ocaml/opam2:4.07
     script:
@@ -10,13 +6,4 @@ build-4.07:
         - opam depext softcheck
         - opam install . --deps-only --with-test
         - dune build @install
-    cache:
-        paths:
-            - _build
-
-test-4.07:
-    stage: test
-    image: ocaml/opam2:4.07
-    script:
-        - opam install dune
         - dune runtest
