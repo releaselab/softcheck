@@ -1,0 +1,11 @@
+f(x,y,z) {
+  var d;
+  d = x + y;
+  return d;
+}
+
+main() {
+  var a,b,c;
+  a = f(a,b,c);
+  return a;
+}

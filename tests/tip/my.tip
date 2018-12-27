@@ -1,0 +1,18 @@
+main() {
+  var n;
+  n = input;
+  return foo(n,3);
+}
+
+foo(p,x) {
+  var f,q;
+  if (p==0) {
+    f=1;
+  }
+  else {
+    q = malloc;
+    q = p-1;
+    f=5;
+  }
+  return f;
+}

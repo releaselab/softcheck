@@ -1,0 +1,15 @@
+main() {
+  var n, m, v;
+  n = input;
+  m = 2;
+  m = n + 3;
+  output m;
+  if (n > 2) {
+    v = n;
+  }
+  else {
+    v = 2;
+  }
+  output v;
+  return 0;
+}

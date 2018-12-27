@@ -1,0 +1,6 @@
+(executables
+    (names tipMain caoMain)
+    (public_names tip-softcheck cao-softcheck)
+    (package softcheck)
+    (libraries softcheck batteries cmdliner)
+ )

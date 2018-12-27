@@ -1,0 +1,13 @@
+Very Busy Expressions
+Entry
+1: {(a - b),(b - a)}
+2: {(a - b),(b - a)}
+3: {(a - b)}
+4: {(a - b),(b - a)}
+5: {(a - b)}
+Exit
+1: {(a - b),(b - a)}
+2: {(a - b)}
+3: {}
+4: {(a - b)}
+5: {}

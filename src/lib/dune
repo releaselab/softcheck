@@ -1,0 +1,36 @@
+(copy_files# utils/*)
+
+(copy_files# analysis/*)
+
+(copy_files# cao/*)
+(copy_files# cao/analysis/*)
+(copy_files# cao/ast/*)
+(copy_files# cao/cfg/*)
+(copy_files# cao/exceptions/*)
+(copy_files# cao/flow/*)
+(copy_files cao/parser/*)
+
+(copy_files# framework/*)
+
+(copy_files cubic/*)
+
+(copy_files# lattices/*)
+
+(copy_files# tip/*)
+(copy_files# tip/analysis/*)
+(copy_files# tip/ast/*)
+(copy_files# tip/cfg/*)
+(copy_files# tip/flow/*)
+(copy_files tip/parser/*)
+
+(library
+  (name softcheck)   ; doesn't support '-' in the name
+  (public_name softcheck)
+  (libraries ocamlgraph facile fix batteries bitv)
+  (wrapped false)
+  (synopsis "Softcheck."))
+
+(ocamllex tipLexer caoLexer)
+
+(menhir
+  (modules tipParser caoParser))

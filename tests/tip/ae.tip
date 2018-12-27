@@ -1,0 +1,10 @@
+main() {
+  var a, b, x, y;
+  x = a + b;
+  y = a * b;
+  while (y > a + b) {
+    a = a + 1;
+    x = a + b;
+  }
+  return x;
+}

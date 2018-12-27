@@ -1,0 +1,25 @@
+opam-version: "2.0"
+name: "softcheck"
+version: "0.1"
+maintainer: "João Reis <joaosreis@outlook.pt>"
+author: "João Reis <joaosreis@outlook.pt>"
+homepage: "https://gitlab.com/joaosreis/softcheck"
+dev-repo: "git+https://gitlab.com/joaosreis/softcheck"
+bug-reports: "https://gitlab.com/joaosreis/softcheck/issues"
+synopsis: "A modular static analysis platform."
+
+build: [["dune" "build" "-p" name "-j" jobs]]
+
+build-test: [["dune" "runtest" "-p" name "-j" jobs]]
+
+depends: [
+  "dune" {build}
+  "ocamlgraph"
+  "facile"
+  "fix"
+  "batteries"
+  "menhir" {build}
+  "cmdliner"
+  "bitv"
+  "kaputt" {with-test}
+]

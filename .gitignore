@@ -1,0 +1,7 @@
+*~
+_build
+bin
+.merlin
+*.install
+_opam
+.vscode

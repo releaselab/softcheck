@@ -1,0 +1,1 @@
+# Generic Monotone Framework Implementation [![Build Status](https://travis-ci.com/joaosreis/monotone-framework.svg?token=TJkDAhx781R1CfeomiXm&branch=master)](https://travis-ci.com/joaosreis/monotone-framework)

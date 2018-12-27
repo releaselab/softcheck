@@ -1,0 +1,11 @@
+(executables
+  (names tipTest caoTest cubicTest)
+  (modules tipTest caoTest cubicTest)
+  (libraries kaputt softcheck)
+  (flags -g)
+  (modes byte))
+
+(alias
+  (name runtest)
+  (deps ../exe/caoMain.exe ../exe/tipMain.exe)
+  (action (progn (run ./caoTest.exe) (run ./tipTest.exe) (run ./cubicTest.exe))))
