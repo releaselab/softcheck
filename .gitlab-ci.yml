@@ -1,0 +1,19 @@
+stages:
+    - build
+    - test
+
+build-4.07:
+    stage: build
+    image: ocaml/opam2:4.07
+    script:
+        - opam install . --deps-only --with-test
+        - dune build @install
+    cache:
+        - _build
+
+test-4.07:
+    stage: test
+    image: ocaml/opam2:4.07
+    script:
+        - dune runtest
+
