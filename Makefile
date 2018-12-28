@@ -1,14 +1,11 @@
 
 # Invoke `make` to build, `make clean` to clean up, etc.
 
-.PHONY: default all utop test clean
+.PHONY: default build utop test clean
 
-default: all
+default: build
 
-# Build one library and one standalone executable that implements
-# multiple subcommands and uses the library.
-# The library can be loaded in utop for interactive testing.
-all:
+build:
 	dune build @install
 
 deps:
@@ -16,11 +13,11 @@ deps:
 	dune external-lib-deps --missing @runtest
 
 # Launch utop such that it finds our library.
-utop: all
+utop: build
 	dune utop src/lib
 
 # Build and run tests
-test: all
+test: build
 	dune runtest
 
 # Clean up
