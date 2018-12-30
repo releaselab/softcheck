@@ -1,6 +1,7 @@
 open Batteries
-open Utils
 open Kaputt
+open Softcheck
+open Utils
 
 module CSolver = Cubic.Make
     (struct type t = string let compare = compare let to_string s = s end)

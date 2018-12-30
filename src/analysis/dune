@@ -1,0 +1,4 @@
+(library
+  (name analysis)   ; doesn't support '-' in the name
+  (libraries batteries softcheck)
+  (synopsis "Analyses for Softcheck."))

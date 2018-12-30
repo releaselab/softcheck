@@ -12,7 +12,7 @@ let test t =
     | `SignAnalysis         -> "signs","sign"
   in let tmp_result = Shell.temp_file f ".result" in
   let cmd = Shell.redirect_output
-      (Shell.command ("../exe/tipMain.exe --" ^ p ^ " ../../../../tests/tip/" ^ f ^ ".tip"))
+      (Shell.command ("../tip/exe/main.exe --" ^ p ^ " ../../../../tests/tip/" ^ f ^ ".tip"))
       tmp_result in
   let result = Shell.run cmd in
   if result <> 0 then begin

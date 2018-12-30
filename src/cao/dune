@@ -1,0 +1,16 @@
+(copy_files# analysis/*)
+(copy_files# ast/*)
+(copy_files# cfg/*)
+(copy_files# exceptions/*)
+(copy_files# flow/*)
+(copy_files parser/*)
+
+(library
+  (name cao)   ; doesn't support '-' in the name
+  (libraries softcheck analysis batteries)
+  (synopsis "Softcheck support for CAO."))
+
+(ocamllex lexer)
+
+(menhir
+  (modules parser))
