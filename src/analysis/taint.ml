@@ -2,20 +2,19 @@ open Batteries
 open Set.Infix
 open Softcheck
 
-module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type stmt_label = Ast.label and type program = Ast.program)
+module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type program = Ast.program)
     (S : sig
        include Reaching_definitions.Language_component
-       val ta : (ident, Taint_lattice.property) Map.t -> vertex ->
-         (ident * Taint_lattice.property) list
-     end with type ident = Cfg.ident and type stmt_label = Cfg.stmt_label and
-    type vertex = Cfg.vertex) = struct
+       val ta : (string, Taint_lattice.property) Map.t -> vertex ->
+         (string * Taint_lattice.property) list
+     end with type vertex = Cfg.vertex) = struct
   module Solve(P : sig val p : Ast.program end) = struct
     let graph = Cfg.generate_from_program P.p
     let blocks = Cfg.get_blocks graph
     let vars = S.free_variables blocks
 
     module Var_tainting_lattice = Lattices.Map_lattice(struct
-        type t = Ast.ident
+        type t = string
         let to_string = identity
         let bottom_elems = vars
       end)(Taint_lattice)
@@ -30,10 +29,8 @@ module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type stmt_label = Ast.label
     module L = Lattices.Pair_lattice(Reaching_definitions_lattice)(Var_tainting_lattice)
 
     module F = struct
-      type label = Cfg.stmt_label
       type vertex = Cfg.vertex
       type state = L.property
-      type ident = Cfg.ident
 
       let f _ l b s =
         let g = S.gen l b in

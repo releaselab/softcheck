@@ -1,7 +1,7 @@
 open Batteries
 open Softcheck
 
-include Flow_graph.MakeCfg(Flow)
+include Flow_graph.Make_cfg(Flow)
 
 type program = Flow.program
 

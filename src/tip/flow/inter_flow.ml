@@ -24,13 +24,13 @@ type block =
   | Send
 
 let to_string = let open Printf in function
-    Sassign(lv,rv)            -> sprintf "%s = %s" (Printer.exp_to_string lv) (Printer.exp_to_string rv)
+    Sassign(lv,rv)            -> sprintf "%s = %s" (Printer.expr_to_string lv) (Printer.expr_to_string rv)
   | Scallassign (lv,rv)
-  | Saftercallassign  (lv,rv) -> sprintf "%s = %s" lv (Printer.exp_to_string rv)
-  | Sreturn e                 -> sprintf "return = %s" (Printer.exp_to_string e)
-  | Soutput(e)                -> sprintf "output %s" (Printer.exp_to_string e)
-  | Sif(e)                    -> sprintf "if %s" (Printer.exp_to_string e)
-  | Swhile(e)                 -> sprintf "while %s" (Printer.exp_to_string e)
+  | Saftercallassign  (lv,rv) -> sprintf "%s = %s" lv (Printer.expr_to_string rv)
+  | Sreturn e                 -> sprintf "return = %s" (Printer.expr_to_string e)
+  | Soutput(e)                -> sprintf "output %s" (Printer.expr_to_string e)
+  | Sif(e)                    -> sprintf "if %s" (Printer.expr_to_string e)
+  | Swhile(e)                 -> sprintf "while %s" (Printer.expr_to_string e)
   | Sbegin _                  -> "begin"
   | Send                      -> "end"
 

@@ -1,7 +1,7 @@
 open Batteries
 open Softcheck
 
-include Flow_graph.MakeInterCfg(Inter_flow)
+include Flow_graph.Make_inter_cfg(Inter_flow)
 
 let generate_from_program (p : Ast.program) =
   let open Ast in

@@ -1,28 +1,37 @@
 open Batteries
 
-type ast_stmt = Ast.stmt
-
-type label = Ast.label
-
 type program = Ast.program
 
 type func = Ast.func
 
-type ident = Ast.ident
-
 type expr = Ast.expr
 
-type block =
-    Sassign of expr * expr
-  | Sif     of expr
-  | Soutput of expr
-  | Swhile  of expr
+let expr_to_string = Printer.expr_to_string
 
-let to_string = let open Printf in function
-    Sassign(lv,rv)  -> sprintf "%s = %s" (Printer.exp_to_string lv) (Printer.exp_to_string rv)
-  | Soutput(e)      -> sprintf "output %s" (Printer.exp_to_string e)
-  | Sif(e)          -> sprintf "if %s" (Printer.exp_to_string e)
-  | Swhile(e)       -> sprintf "while %s" (Printer.exp_to_string e)
+let rec stmt_to_node =
+  let open Ast in
+  let open Softcheck.Cfg_node.Intermediate in
+  function
+    Sassign (_, lv, rv) -> create (Cfg_assign (lv, rv))
+  | Soutput (_, e) -> create (Cfg_call (Eident "output", [e]))
+  | Sif (_, e, b) -> create (Cfg_if (e, stmt_to_node b))
+  | Sifelse (_, e, ib, eb) -> create (Cfg_if_else (e, stmt_to_node ib, stmt_to_node eb))
+  | Swhile (_, e, b) -> create (Cfg_while (e, stmt_to_node b))
+  | Sblock (h :: t) -> List.fold_left (fun acc s -> create (Cfg_seq (acc, stmt_to_node s))) (stmt_to_node h) t
+  | Sblock [] -> create Cfg_skip
+
+let global_decls _ = []
+
+let funcs =
+  let open Softcheck.Cfg_node.Intermediate in
+  let process_decls = function
+      [] -> create Cfg_skip
+    | h :: t ->
+        List.fold_left (fun acc d ->
+          create (Cfg_seq (acc, create (Cfg_var_decl d)))) (create (Cfg_var_decl h)) t in
+  List.map (fun f ->
+    let decls = process_decls f.Ast.func_vars in
+    f.Ast.func_id, f.Ast.func_vars, create (Cfg_seq (decls, stmt_to_node f.Ast.func_body)))
 
 let rec init = function
     Ast.Sassign(l,_,_)
@@ -42,18 +51,6 @@ let final = let open Set.Infix in
     | Ast.Sifelse(_,_,si,se)  -> final_rec (final_rec acc si) se
     | Ast.Sblock b            -> match b with [] -> assert false | _ -> List.last b |> final_rec acc
   in final_rec Set.empty
-
-let blocks f = let open Set.Infix in
-  let rec blocks_rec acc = function
-      Ast.Sassign(l,lv,rv)    -> acc <-- (l,Sassign(lv,rv))
-    | Ast.Soutput(l,e)        -> acc <-- (l,Soutput(e))
-    | Ast.Sblock b            -> List.fold_left blocks_rec acc b
-    | Ast.Swhile(l,e,s)       -> blocks_rec (acc <-- (l,Swhile(e))) s
-    | Ast.Sif(l,e,s)          -> blocks_rec (acc <-- (l,Sif(e))) s
-    | Ast.Sifelse(l,e,si,se)  -> blocks_rec (blocks_rec (acc <-- (l,Sif(e))) si) se
-  in blocks_rec Set.empty f.Ast.func_body
-
-let labels = Set.map fst % blocks
 
 let rev_pair x y = (y, x)
 

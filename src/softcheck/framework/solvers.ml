@@ -13,12 +13,11 @@ end
 
 module Make_fix(L : Sig.Lattice)(Cfg : Sig.Flow_graph)
     (F : Sig.Transfer with
-      type label = Cfg.stmt_label
-                       and type vertex = Cfg.vertex
+      type vertex = Cfg.vertex
                        and type state = L.property)
-    (D : Sig.Dependencies with type g_t = Cfg.t and type label = Cfg.stmt_label)
+    (D : Sig.Dependencies with type g_t = Cfg.t)
 = struct
-  type variable = Circ of Cfg.stmt_label | Bullet of Cfg.stmt_label
+  type variable = Circ of int | Bullet of int
   module Fix = Fix.Make(Imperative_map(struct type key = variable end))(L)
 
   let generate_equations graph var state =
@@ -34,12 +33,11 @@ module Make_fix(L : Sig.Lattice)(Cfg : Sig.Flow_graph)
 end
 
 module Make_fix_inter(L : Sig.Lattice)(Cfg : Sig.Inter_flow_graph)
-    (F : Sig.Inter_transfer with type label = Cfg.stmt_label and
-    type vertex = Cfg.vertex and
+    (F : Sig.Inter_transfer with type vertex = Cfg.vertex and
     type state = L.property)
-    (D : Sig.Dependencies with type g_t = Cfg.t and type label = Cfg.stmt_label)
+    (D : Sig.Dependencies with type g_t = Cfg.t)
 = struct
-  type variable = Circ of Cfg.stmt_label | Bullet of Cfg.stmt_label
+  type variable = Circ of int | Bullet of int
   module Fix = Fix.Make(Imperative_map(struct type key = variable end))(L)
 
   let generate_equations graph var state =

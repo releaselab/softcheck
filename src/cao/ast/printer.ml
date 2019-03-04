@@ -89,9 +89,9 @@ and literal_to_string = function
 
 and rowapat_to_string =
   function
-    CElem     ce -> exp_to_string ce
-  | CRange    cr -> sprintf "%s..%s" (exp_to_string cr.crange_start_val)
-                      (exp_to_string cr.crange_end_val)
+    CElem     ce -> expr_to_string ce
+  | CRange    cr -> sprintf "%s..%s" (expr_to_string cr.crange_start_val)
+                      (expr_to_string cr.crange_end_val)
 
 and apat_to_string = function
     VectP rowAPat -> rowapat_to_string rowAPat
@@ -101,22 +101,22 @@ and apat_to_string = function
 and bits_d_to_string b =
   sprintf "%s bits [%s]"
     (match b.bits_d_signal with U -> "unsigned" | S -> "signed")
-    (exp_to_string b.bits_d_size)
+    (expr_to_string b.bits_d_size)
 
 and mod_d_to_string m =
   sprintf "mod [%s]"
     (match m with
-       ModNum e -> exp_to_string e
+       ModNum e -> expr_to_string e
      | ModPol m -> sprintf "%s<%s> of %s" (tydecl_to_string m.modpol_field_t)
                      m.modpol_var (polinomial_to_string m.modpol_poly))
 
 and vector_d_to_string v =
-  sprintf "vector [%s] of %s" (exp_to_string v.vector_d_size)
+  sprintf "vector [%s] of %s" (expr_to_string v.vector_d_size)
     (tydecl_to_string v.vector_d_type)
 
 and matrix_d_to_string m =
-  sprintf "matrix [%s,%s] of %s" (exp_to_string m.matrix_d_rows)
-    (exp_to_string m.matrix_d_cols) (tydecl_to_string m.matrix_d_type)
+  sprintf "matrix [%s,%s] of %s" (expr_to_string m.matrix_d_rows)
+    (expr_to_string m.matrix_d_cols) (tydecl_to_string m.matrix_d_type)
 
 and tydecl_to_string = function
     IntD              -> "int"
@@ -129,20 +129,20 @@ and tydecl_to_string = function
   | MatrixD matrix_d  -> matrix_d_to_string matrix_d
   | TySynD tysyn_d    -> tysyn_d.tysyn_d_id
 
-and exp_to_string = function
+and expr_to_string = function
     Var s -> s
   | Lit l -> literal_to_string l
   | FunCall fc ->
-      sprint_list ~first:(fc.funcall_id ^ "(") ~last:")" ~sep:", " exp_to_string fc.funcall_args
-  | StructProj sp -> sprintf "%s.%s" (exp_to_string sp.structproj_id) sp.structproj_field
+      sprint_list ~first:(fc.funcall_id ^ "(") ~last:")" ~sep:", " expr_to_string fc.funcall_args
+  | StructProj sp -> sprintf "%s.%s" (expr_to_string sp.structproj_id) sp.structproj_field
   | UnaryOp uo -> sprintf "%s(%s)" (uop_to_string uo.unaryop_op)
-                    (exp_to_string uo.unaryop_expr)
-  | BinaryOp bo -> sprintf "(%s)%s(%s)" (exp_to_string bo.binaryop_l_expr)
-                     (binop_to_string bo.binaryop_op) (exp_to_string bo.binaryop_r_expr)
-  | Access access -> sprintf "%s[%s]" (exp_to_string access.access_container_id)
+                    (expr_to_string uo.unaryop_expr)
+  | BinaryOp bo -> sprintf "(%s)%s(%s)" (expr_to_string bo.binaryop_l_expr)
+                     (binop_to_string bo.binaryop_op) (expr_to_string bo.binaryop_r_expr)
+  | Access access -> sprintf "%s[%s]" (expr_to_string access.access_container_id)
                        (apat_to_string access.access_pattern)
   | Cast c -> sprintf "(%s) %s" (tydecl_to_string c.cast_type)
-                (exp_to_string c.cast_expr)
+                (expr_to_string c.cast_expr)
 
 let vardecl_to_string vd =
   let ids,typedecl,init = match vd with
@@ -151,15 +151,15 @@ let vardecl_to_string vd =
         let typedecl = tydecl_to_string var_d.var_d_type in
         let init = match var_d.var_d_init with
             None -> ""
-          | Some expr -> " := " ^ (exp_to_string expr) in
+          | Some expr -> " := " ^ (expr_to_string expr) in
         ids,typedecl,init
     | ContD cont_d ->
         let ids = sprint_list ~sep:"," identity cont_d.cont_d_ids in
         let typedecl = tydecl_to_string cont_d.cont_d_type in
         let init = match cont_d.cont_d_init with
             [] -> ""
-          | [e] -> " := " ^ (exp_to_string e)
-          | l -> sprint_list ~sep:"," exp_to_string l |>
+          | [e] -> " := " ^ (expr_to_string e)
+          | l -> sprint_list ~sep:"," expr_to_string l |>
                  sprintf " := { %s }"
         in ids,typedecl,init
   in sprintf "def %s : %s%s" ids typedecl init
@@ -169,8 +169,8 @@ let const_d_to_string cd =
   let typedecl = tydecl_to_string cd.const_d_type in
   let init = match cd.const_d_ann with
       NoConst -> ""
-    | ConstInit e -> " := " ^ (exp_to_string e)
-    | ConstCond e -> exp_to_string e |> sprintf " { %s }"
+    | ConstInit e -> " := " ^ (expr_to_string e)
+    | ConstCond e -> expr_to_string e |> sprintf " { %s }"
   in sprintf "def const %s : %s%s" ids typedecl init
 
 let rec lval_to_string = function
@@ -180,7 +180,7 @@ let rec lval_to_string = function
 
 let assign_to_string a =
   let ids = sprint_list ~sep:"," lval_to_string a.assign_ids in
-  let exprs = sprint_list ~sep:"," exp_to_string a.assign_values in
+  let exprs = sprint_list ~sep:"," expr_to_string a.assign_values in
   sprintf "%s := %s" ids exprs
 
 let sample_to_string l =
@@ -189,11 +189,11 @@ let sample_to_string l =
 
 let fcalls_to_string f =
   let id = f.fcalls_id in
-  let args = sprint_list ~sep:"," exp_to_string f.fcalls_args in
+  let args = sprint_list ~sep:"," expr_to_string f.fcalls_args in
   sprintf "%s(%s)" id args
 
 let rec ite_to_string i =
-  sprintf "if (%s) {\n%s\n}%s" (exp_to_string i.ite_condition)
+  sprintf "if (%s) {\n%s\n}%s" (expr_to_string i.ite_condition)
     (stmt_to_string i.if_branch)
     (match i.else_branch with
        None -> ""
@@ -201,11 +201,11 @@ let rec ite_to_string i =
 
 and seq_to_string s =
   sprintf "seq %s := %s to %s%s {\n%s\n}" s.seq_header.seqheader_var
-    (exp_to_string s.seq_header.seqheader_start_val)
-    (exp_to_string s.seq_header.seqheader_end_val)
+    (expr_to_string s.seq_header.seqheader_start_val)
+    (expr_to_string s.seq_header.seqheader_end_val)
     (match s.seq_header.seqheader_increase with
        None -> ""
-     | Some e -> " by " ^ (exp_to_string e)) (stmt_to_string s.seq_body)
+     | Some e -> " by " ^ (expr_to_string e)) (stmt_to_string s.seq_body)
 
 and stmt_to_string s = match s with
     Block b -> sprint_list ~sep:"\n" stmt_to_string b
@@ -215,8 +215,8 @@ and stmt_to_string s = match s with
     | Assign assign -> assign_to_string assign
     | Sample lVals -> sample_to_string lVals
     | FCallS fcalls -> fcalls_to_string fcalls
-    | Ret lExpr -> "return " ^ exp_to_string lExpr
+    | Ret lExpr -> "return " ^ expr_to_string lExpr
     | Ite ite -> ite_to_string ite
     | Seq seq -> seq_to_string seq
-    | While loop -> sprintf "while (%s) {\n%s\n}" (exp_to_string loop.loop_condition)
+    | While loop -> sprintf "while (%s) {\n%s\n}" (expr_to_string loop.loop_condition)
                       (stmt_to_string loop.loop_body)

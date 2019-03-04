@@ -31,10 +31,11 @@ end
 
 module FlowSensitiveAnalysis
     (D : sig
-       type t = int val bottom_elems : t Set.t
+       type t = int
+       val bottom_elems : t Set.t
        val to_string : t -> string
      end)
-    (L : Sig.Lattice)(CfgM : Sig.Flow_graph with type stmt_label = D.t)
+    (L : Sig.Lattice)(CfgM : Sig.Flow_graph )
     (Cfg : sig val instance : CfgM.t end) = struct
   module Lattice = Lattices.Map_lattice(D)(L)
   let domain = CfgM.get_blocks Cfg.instance

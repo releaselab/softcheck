@@ -30,21 +30,21 @@ let to_string = let open Printer in
     let open Ast in
     let open Printer in
     Printf.sprintf "seq %s := %s to %s%s" s.seqheader_var
-      (exp_to_string s.seqheader_start_val)
-      (exp_to_string s.seqheader_end_val)
+      (expr_to_string s.seqheader_start_val)
+      (expr_to_string s.seqheader_end_val)
       (match s.seqheader_increase with
          None -> ""
-       | Some e -> " by " ^ (exp_to_string e)) in
+       | Some e -> " by " ^ (expr_to_string e)) in
   function
     VDecl varDecl -> vardecl_to_string varDecl
   | CDecl const_d -> const_d_to_string const_d
   | Assign assign -> assign_to_string assign
   | Sample lVals -> sample_to_string lVals
   | FCallS fcalls -> fcalls_to_string fcalls
-  | Ret expr -> "return " ^ exp_to_string expr
-  | Ite expr -> Printf.sprintf "if (%s)" (exp_to_string expr)
+  | Ret expr -> "return " ^ expr_to_string expr
+  | Ite expr -> Printf.sprintf "if (%s)" (expr_to_string expr)
   | Seq seq -> seq_to_string seq
-  | While expr -> Printf.sprintf "while (%s)" (exp_to_string expr)
+  | While expr -> Printf.sprintf "while (%s)" (expr_to_string expr)
 
 let rec init = let open Ast in function
     Stmt (l, _) -> l
