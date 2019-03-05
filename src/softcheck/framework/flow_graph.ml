@@ -119,12 +119,15 @@ module Make_cfg(F : sig
 
   let show = display_with_gv
 
-  let flow g =
+  let flow g n =
     let open Cfg_node.Intermediate in
-    function
-      Cfg_var_decl v -> Node.Cfg_var_decl v
-    | Cfg_assign 
-
+    let stmt = match n.stmt with
+        Cfg_var_decl v -> Node.Cfg_var_decl v
+      | Cfg_assign (lv, rv) -> Node.Cfg_assign (lv, rv)
+    in {
+      id = n.id;
+      loc = n.loc;
+      stmt }
 end
 
 module Make_inter_cfg(F : sig
