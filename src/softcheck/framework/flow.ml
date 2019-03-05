@@ -12,7 +12,6 @@ let rec init n = match n.stmt with
   | Cfg_if _
   | Cfg_if_else _
   | Cfg_jump _
-  | Cfg_skip
   | Cfg_var_decl _
   | Cfg_while _ -> n.id
   | Cfg_seq (x, _) -> init x
@@ -22,7 +21,6 @@ let final =
   let rec final_rec acc n = match n.stmt with
       Cfg_assign _
     | Cfg_call _
-    | Cfg_skip
     | Cfg_jump _
     | Cfg_var_decl _
     | Cfg_while _ -> acc <-- n.id
@@ -34,19 +32,22 @@ let final =
 let rev_pair x y = (y, x)
 
 let flow =
-  let while_counter = ref (-1) in
-  let next_counter () = while_counter := !while_counter + 1; ref in
   let open Set.Infix in
-  let rec flow_rec (nodes, flow) n = match n.stmt with
+  let ht = Hashtbl.create 10 in
+  let rec flow_rec (nodes, flow) n =
+    let id = n.id in
+    match n.stmt with  
       Cfg_assign (lv, rv) ->
         let n = Node.(create ~loc:n.loc (Cfg_assign (lv, rv))) in
+        let () = Hashtbl.add ht id n.id in
         nodes <-- n, flow
-    | Cfg_skip -> nodes, flow
     | Cfg_var_decl v ->
         let n = Node.(create ~loc:n.loc (Cfg_var_decl v)) in
+        let () = Hashtbl.add ht id n.id in
         nodes <-- n, flow
     | Cfg_call (f, args) ->
         let n = Node.(create ~loc:n.loc (Cfg_call (f, args))) in
+        let () = Hashtbl.add ht id n.id in
         nodes <-- n, flow
     | Cfg_seq (s_1, s_2) ->
         let init_s2 = init s_2 in
@@ -54,13 +55,25 @@ let flow =
         let flow' = flow ||. Set.map (rev_pair init_s2) final_s1 in
         flow_rec (flow_rec (nodes, flow') s_1) s_2
     | Cfg_while (e, b) ->
-        let n = Node.(create ~loc:n.loc (Cfg_jump ("_while" ^ string_of_int (next_counter ())))) in
-        let flow' = Set.map (rev_pair n.id) (final b) <-- (n.id, init b) ||. flow in
+        let n = Node.(create ~loc:n.loc (Cfg_guard e)) in
+        let () = Hashtbl.add ht id n.id in
+        let nodes' = nodes <-- n in
+        let flow' = Set.map (rev_pair n.id)
+            (final b) <-- (n.id, init b) ||. flow in
+        flow_rec (nodes', flow') b
+    | Cfg_if (e, b)          ->
+        let n = Node.(create ~loc:n.loc (Cfg_guard e)) in
+        let () = Hashtbl.add ht id n.id in
+        let nodes' = nodes <-- n in
+        let flow' = flow <-- (n.id, init b) in
+        flow_rec (nodes', flow') b
+    | Cfg_if_else (e, x, y)  ->
+        let n = Node.(create ~loc:n.loc (Cfg_guard e)) in
+        let nodes' = nodes <-- n in
+        let flow' = flow <-- (n.id, init x) <-- (n.id, init y) in
+        flow_rec (flow_rec (nodes', flow') x) y
+    | Cfg_jump _ -> (nodes, flow)
+  in flow_rec (Set.empty, Set.empty)
 
-        flow_rec () x
-    | Cfg_if (_, x)          -> flow_rec (acc <-- (n.id, init x)) x
-    | Cfg_if_else (_, x, y)  -> flow_rec (flow_rec (acc <-- (n.id, init x) <-- (n.id, init y)) x) y
-    | Cfg_jump -> acc
-  in flow_rec Set.empty
-
-let flowR = Set.map (fun (a,b) -> (b,a)) % flow
+let flowR n = let nodes, flow = flow n in
+  nodes, Set.map (fun (a,b) -> (b,a)) flow
