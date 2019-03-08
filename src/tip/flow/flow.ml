@@ -10,7 +10,7 @@ let expr_to_string = Printer.expr_to_string
 
 let rec stmt_to_node =
   let open Ast in
-  let open Softcheck.Cfg_node.Intermediate in
+  let open Softcheck.Softlang in
   function
     Sassign (_, lv, rv) -> create (Cfg_assign (lv, rv))
   | Soutput (_, e) -> create (Cfg_call (Eident "output", [e]))
@@ -18,14 +18,14 @@ let rec stmt_to_node =
   | Sifelse (_, e, ib, eb) -> create (Cfg_if_else (e, stmt_to_node ib, stmt_to_node eb))
   | Swhile (_, e, b) -> create (Cfg_while (e, stmt_to_node b))
   | Sblock (h :: t) -> List.fold_left (fun acc s -> create (Cfg_seq (acc, stmt_to_node s))) (stmt_to_node h) t
-  | Sblock [] -> create Cfg_skip
+  | Sblock [] -> assert false
 
 let global_decls _ = []
 
 let funcs =
-  let open Softcheck.Cfg_node.Intermediate in
+  let open Softcheck.Softlang in
   let process_decls = function
-      [] -> create Cfg_skip
+      [] -> assert false
     | h :: t ->
         List.fold_left (fun acc d ->
           create (Cfg_seq (acc, create (Cfg_var_decl d)))) (create (Cfg_var_decl h)) t in

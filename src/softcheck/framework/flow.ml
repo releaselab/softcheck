@@ -1,12 +1,7 @@
 open Batteries
 
-open Cfg_node.Intermediate
-
-module Node = Cfg_node.Processed
-
 (* FIXME: check jumps *)
-
-let rec init n = match n.stmt with
+let rec init n = match n.Softlang.stmt with
     Cfg_assign _
   | Cfg_call _
   | Cfg_if _
@@ -16,9 +11,9 @@ let rec init n = match n.stmt with
   | Cfg_while _ -> n.id
   | Cfg_seq (x, _) -> init x
 
-let final =
+let final x =
   let open Set.Infix in
-  let rec final_rec acc n = match n.stmt with
+  let rec final_rec acc n = match n.Softlang.stmt with
       Cfg_assign _
     | Cfg_call _
     | Cfg_jump _
@@ -27,7 +22,7 @@ let final =
     | Cfg_if (_, x) -> final_rec acc x
     | Cfg_if_else (_, x, y) -> final_rec (final_rec acc x) y
     | Cfg_seq (_, x) -> final_rec acc x
-  in final_rec Set.empty
+  in final_rec Set.empty x
 
 let rev_pair x y = (y, x)
 
@@ -36,10 +31,10 @@ let flow x =
   let ht = Hashtbl.create 10 in
   let rec flow_rec (nodes, flow) n =
     let new_node s =
-      let n' = Node.create ~loc:n.loc s in
-      let () = Hashtbl.add ht n.id n'.id in
+      let n' = Cfg_node.create ~loc:n.Softlang.loc s in
+      let () = Hashtbl.add ht n.id n' in
       n' in
-    match n.stmt with  
+    match n.Softlang.stmt with  
       Cfg_assign (lv, rv) ->
         let n = new_node (Cfg_assign (lv, rv)) in
         nodes <-- n, flow

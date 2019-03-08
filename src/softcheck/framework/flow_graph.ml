@@ -1,14 +1,12 @@
-module Node = Cfg_node.Processed
-
-module Make_common(F : sig
+module Make_common(Expr : sig
     type expr
     val expr_to_string : expr -> string
   end) = struct
   module V = struct
-    type t = F.expr Node.t
-    let compare x y = compare x.Node.id y.Node.id
-    let hash x = Hashtbl.hash x.Node.id
-    let equal x y = x.Node.id = y.Node.id
+    type t = Expr.expr Cfg_node.t
+    let compare x y = compare x.Cfg_node.id y.Cfg_node.id
+    let hash x = Hashtbl.hash x.Cfg_node.id
+    let equal x y = x.Cfg_node.id = y.Cfg_node.id
   end
 
   module E = struct
@@ -32,13 +30,13 @@ module Make_common(F : sig
       val label_to_dot_label : int -> string end) = struct
     include G
 
-    let vertex_name v = string_of_int v.Node.id
+    let vertex_name v = string_of_int v.Cfg_node.id
     let graph_attributes _ = []
     let default_vertex_attributes _ = [`Shape(`Box); `Fontname("Courier")]
-    let vertex_attributes v = [`Label(X.label_to_dot_label v.Node.id)]
+    let vertex_attributes v = [`Label(X.label_to_dot_label v.Cfg_node.id)]
     let default_edge_attributes _ = []
     let edge_attributes _ = []
-    let get_subgraph v = Some(X.label_to_subgraph v.Node.id)
+    let get_subgraph v = Some(X.label_to_subgraph v.Cfg_node.id)
   end
 
   module Wrapper = struct
@@ -51,7 +49,7 @@ module Make_common(F : sig
     let get = Hashtbl.find
 
     let add b g p func_id v =
-      let open Node in
+      let open Cfg_node in
       Hashtbl.replace b v.id v;
       Hashtbl.replace p v.id func_id; G.add_vertex g v
 
@@ -62,7 +60,7 @@ module Make_common(F : sig
       struct
         let label_to_dot_label l =
           let n = Hashtbl.find b l in
-          Printf.sprintf "[%s]^%d" (Node.to_string F.expr_to_string (n.Node.stmt)) l
+          Printf.sprintf "[%s]^%d" (Cfg_node.to_string Expr.expr_to_string (n.Cfg_node.stmt)) l
         let label_to_subgraph l =
           let fid = Hashtbl.find p l in
           {Graph.Graphviz.DotAttributes.sg_name=fid; sg_attributes=[`Label fid]; sg_parent=None}
@@ -82,11 +80,21 @@ module Make_common(F : sig
   end
 end
 
-module Make_cfg(F : sig
+module Make_cfg(Expr : sig
     type expr
     val expr_to_string : expr -> string
-  end) = struct
-  include Make_common(F)
+  end)
+    (C : sig
+       type program
+       type decl
+       type expr
+       type stmt
+
+       val stmt_to_node : stmt -> expr Softlang.t
+       val global_decls : program -> decl list
+       val funcs : program -> (string * string list * expr Softlang.t) list
+     end with type expr = Expr.expr) = struct
+  include Make_common(Expr)
 
   type t = {
     blocks: (int, V.t) Hashtbl.t;
@@ -119,16 +127,30 @@ module Make_cfg(F : sig
 
   let show = display_with_gv
 
-
+  let generate_from_program (p : C.program) =
+    let open Batteries in
+    let graph = create() in (* graph -> Make2.t *)
+    let pBlocks = Hashtbl.create 10 in (* pBlocks -> Hashtbl.t *)
+    let funcs = C.funcs p in
+    let () = List.map (fun (_, _, b) -> Flow.init b) funcs |>
+             List.iter (extremal graph) in
+    let () = List.map (fun (_, _, b) -> Flow.final b) funcs |>
+             List.iter (Set.iter (extremalR graph)) in
+    let () =
+      Hashtbl.iter (fun id blocks -> Set.iter (add graph id) blocks) pBlocks in
+    let add_edge (i, j) = connect graph i j in
+    let () = List.iter (fun (f, _, b) ->
+      let nodes, flow = Flow.flow b in
+      let () = Hashtbl.replace pBlocks f nodes in
+      Set.iter add_edge flow) funcs in
+    graph
 end
 
-module Make_inter_cfg(F : sig
+module Make_inter_cfg(Expr : sig
     type expr
     val expr_to_string : expr -> string
   end) = struct
-  include Make_common(F)
-
-  module Cfg = Make_cfg(F)
+  include Make_common(Expr)
 
   type t = {
     blocks: (int, V.t) Hashtbl.t;

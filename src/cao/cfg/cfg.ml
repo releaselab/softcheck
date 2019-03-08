@@ -1,9 +1,12 @@
 open Batteries
 open Softcheck
 
-include Flow_graph.Make_cfg(Flow)
+include Flow_graph.Make_cfg(struct
+    type expr = Ast.expr
+    let expr_to_string = Printer.expr_to_string
+  end)
 
-type program = Flow.program
+type program = Ast.program
 
 let generate_from_program (p : Ast.program) =
   let open Ast in
