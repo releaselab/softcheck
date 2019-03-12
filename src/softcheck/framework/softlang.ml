@@ -1,7 +1,9 @@
 open Batteries
 
+type decl = string
+
 type 'a stmt =
-    Cfg_var_decl of string
+    Cfg_var_decl of decl
   | Cfg_assign of 'a * 'a
   | Cfg_if of 'a * 'a node
   | Cfg_if_else of 'a * 'a node * 'a node
@@ -33,3 +35,7 @@ module Make_set(E : sig type t end) = struct
 end
 
 type 'a t = 'a node
+
+type 'a func = string * decl list * 'a t
+
+type 'a program = decl list * ('a func) list

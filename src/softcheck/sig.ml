@@ -25,32 +25,34 @@ module type Flow = sig
 end
 
 module type Flow_graph = sig
+  type expr
+  type vertex = expr Cfg_node.t
+  type edge_label = Normal | If_true | If_false
+  type program 
   type t
-  type vertex
-  type edge_label
-  type program
 
   val create : unit -> t
-  val generate_from_program : program -> t
-  val get : t -> int -> vertex
-  val add : t -> string -> (int * vertex) -> unit
-  val connect : t -> ?label:edge_label -> int -> int -> unit
-  val inflow : t -> int -> int list
-  val outflow : t -> int -> int list
-  val extremal : t -> int -> unit
-  val is_extremal : t -> int -> bool
-  val extremalR : t -> int -> unit
-  val is_extremalR : t -> int -> bool
-  val get_blocks : t -> (int, vertex) Hashtbl.t
-  val get_func_id : t -> int -> string
+  val inflow : t -> vertex -> vertex list
+  val outflow : t -> vertex -> vertex list
+  val is_extremal : t -> vertex -> bool
+  val is_extremalR : t -> vertex -> bool
+  val add : t -> string -> vertex -> unit
+  val connect : t -> ?label:edge_label -> vertex -> vertex -> unit
+  val get_blocks : t -> vertex Set.t
+  val get_func_id : t -> vertex -> string
+  val extremal : t -> vertex -> unit
+  val extremalR : t -> vertex -> unit
+  val dot_output : t -> string -> unit
+  val display_with_gv : t -> unit
   val show : t -> unit
+  val generate_from_program : program -> t
 end
 
 module type Inter_flow_graph = sig
   include Flow_graph
 
-  val inter_flow : t -> (int * int * int * int) list
-  val callees : t -> int -> int list
+  val inter_flow : t -> (vertex * vertex * vertex * vertex) list
+  (* TODO: val callees : t -> int -> int list *)
 end
 
 module type Transfer = sig
@@ -84,8 +86,9 @@ end
 
 module type Dependencies = sig
   type g_t
+  type vertex
 
-  val outdep : g_t -> int -> int list
+  val outdep : g_t -> vertex -> vertex list
   val indep : g_t -> int -> int list
   val is_extremal : g_t -> int -> bool
 end

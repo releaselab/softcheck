@@ -8,7 +8,7 @@ let rec init n = match n.Softlang.stmt with
   | Cfg_if_else _
   | Cfg_jump _
   | Cfg_var_decl _
-  | Cfg_while _ -> n.id
+  | Cfg_while _ -> n
   | Cfg_seq (x, _) -> init x
 
 let final x =
@@ -18,7 +18,7 @@ let final x =
     | Cfg_call _
     | Cfg_jump _
     | Cfg_var_decl _
-    | Cfg_while _ -> acc <-- n.id
+    | Cfg_while _ -> acc <-- n
     | Cfg_if (_, x) -> final_rec acc x
     | Cfg_if_else (_, x, y) -> final_rec (final_rec acc x) y
     | Cfg_seq (_, x) -> final_rec acc x
@@ -32,17 +32,16 @@ let flow x =
   let rec flow_rec (nodes, flow) n =
     let new_node s =
       let n' = Cfg_node.create ~loc:n.Softlang.loc s in
-      let () = Hashtbl.add ht n.id n' in
-      n' in
+      Hashtbl.add ht n n' in
     match n.Softlang.stmt with  
       Cfg_assign (lv, rv) ->
-        let n = new_node (Cfg_assign (lv, rv)) in
+        let () = new_node (Cfg_assign (lv, rv)) in
         nodes <-- n, flow
     | Cfg_var_decl v ->
-        let n = new_node (Cfg_var_decl v) in
+        let () = new_node (Cfg_var_decl v) in
         nodes <-- n, flow
     | Cfg_call (f, args) ->
-        let n = new_node (Cfg_call (f, args)) in
+        let () = new_node (Cfg_call (f, args)) in
         nodes <-- n, flow
     | Cfg_seq (s_1, s_2) ->
         let init_s2 = init s_2 in
@@ -50,24 +49,27 @@ let flow x =
         let flow' = flow ||. Set.map (rev_pair init_s2) final_s1 in
         flow_rec (flow_rec (nodes, flow') s_1) s_2
     | Cfg_while (e, b) ->
-        let n = new_node (Cfg_guard e) in
+        let () = new_node (Cfg_guard e) in
         let nodes' = nodes <-- n in
-        let flow' = Set.map (rev_pair n.id)
-            (final b) <-- (n.id, init b) ||. flow in
+        let flow' = Set.map (rev_pair n)
+            (final b) <-- (n, init b) ||. flow in
         flow_rec (nodes', flow') b
     | Cfg_if (e, b)          ->
-        let n = new_node (Cfg_guard e) in
+        let () = new_node (Cfg_guard e) in
         let nodes' = nodes <-- n in
-        let flow' = flow <-- (n.id, init b) in
+        let flow' = flow <-- (n, init b) in
         flow_rec (nodes', flow') b
     | Cfg_if_else (e, x, y)  ->
-        let n = new_node (Cfg_guard e) in
+        let () = new_node (Cfg_guard e) in
         let nodes' = nodes <-- n in
-        let flow' = flow <-- (n.id, init x) <-- (n.id, init y) in
+        let flow' = flow <-- (n, init x) <-- (n, init y) in
         flow_rec (flow_rec (nodes', flow') x) y
     | Cfg_jump _ -> (nodes, flow) in
   let nodes, flow = flow_rec (Set.empty, Set.empty) x in
-  nodes, Set.map (fun (a, b) -> Hashtbl.find ht a, Hashtbl.find ht b) flow
+  let initial = Hashtbl.find ht (init x) in
+  let nodes' = Set.map (Hashtbl.find ht) nodes in
+  ht, Set.singleton initial, nodes', Set.map (fun (a, b) -> Hashtbl.find ht a, Hashtbl.find ht b) flow
 
-let flowR n = let nodes, flow = flow n in
-  nodes, Set.map (fun (a,b) -> (b,a)) flow
+let flowR n = let ht, _, nodes, flow = flow n in
+  (* TODO: initial *)
+  ht, nodes, Set.map (fun (a,b) -> (b,a)) flow

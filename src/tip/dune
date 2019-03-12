@@ -1,7 +1,7 @@
 (copy_files# analysis/*)
 (copy_files# ast/*)
-(copy_files# cfg/*)
 (copy_files# flow/*)
+(copy_files# cfg/*)
 (copy_files parser/*)
 
 (library
