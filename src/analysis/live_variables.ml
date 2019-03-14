@@ -16,7 +16,7 @@ module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type program = Ast.program)
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ _ b s = let open Set.Infix in
+      let f _ b s = let open Set.Infix in
         let g = S.gen b in
         let k = S.kill b in
         (s -. k) ||. g

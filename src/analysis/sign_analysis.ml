@@ -21,7 +21,7 @@ module Make(Ast : Sig.Ast)
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ _ b s =
+      let f _ b s =
         let evals = S.sign_eval s b in
         List.fold_left (fun m (i,eval) -> L.set m i eval) s evals
 

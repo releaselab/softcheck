@@ -4,11 +4,11 @@ open Softcheck
 
 module type Language_component = sig
   type vertex  
-  type blocks = (int, vertex) Hashtbl.t
-  type definition_location = string * int option
+  type blocks = vertex Set.t
+  type definition_location = string * vertex option
 
   val free_variables : blocks -> string Set.t
-  val gen : int -> vertex -> definition_location Set.t
+  val gen : vertex -> definition_location Set.t
   val kill : blocks -> vertex -> definition_location Set.t
 end
 
@@ -21,18 +21,18 @@ module Make(Ast : Sig.Ast)
 
     module L = Lattices.Powerset_lattice(struct
         type t = S.definition_location
-        let to_string (v,l) = Printf.sprintf "(%s,%s)" v (match l with
+        let to_string (v, n) = Printf.sprintf "(%s,%s)" v (match n with
             None    -> "?"
-          | Some l' -> string_of_int l')
+          | Some n' -> string_of_int (n'.Cfg_node.id))
       end)
 
     module F = struct
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ l b s =
-        let g = S.gen l b in
-        let k = S.kill blocks b in
+      let f _ n s =
+        let g = S.gen n in
+        let k = S.kill blocks n in
         (s -. k) ||. g
 
       let initial_state = Set.map (fun x -> x,None) (S.free_variables blocks)

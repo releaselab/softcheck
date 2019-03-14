@@ -21,9 +21,9 @@ module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type program = Ast.program)
 
     module Reaching_definitions_lattice = Lattices.Powerset_lattice(struct
         type t = S.definition_location
-        let to_string (v,l) = Printf.sprintf "(%s,%s)" v (match l with
+        let to_string (v, n) = Printf.sprintf "(%s,%s)" v (match n with
             None    -> "?"
-          | Some l' -> string_of_int l')
+          | Some n' -> string_of_int n'.Cfg_node.id)
       end)
 
     module L = Lattices.Pair_lattice(Reaching_definitions_lattice)(Var_tainting_lattice)
@@ -32,8 +32,8 @@ module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type program = Ast.program)
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ l b s =
-        let g = S.gen l b in
+      let f _ b s =
+        let g = S.gen b in
         let k = S.kill blocks b in
         let s1 = (fst s -. k) ||. g in
         let new_tv = S.ta (snd s) b in

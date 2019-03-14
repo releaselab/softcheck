@@ -4,7 +4,7 @@ open Softcheck
 
 module Make(E : sig type expr end)
     (Printer : Sig.Printer with type expr = E.expr)
-    (Cfg : Sig.Flow_graph with type vertex = E.expr Cfg_node.t)
+    (Cfg : Sig.Flow_graph with type expr = E.expr)
     (S : sig
        val containst_lv : E.expr -> E.expr -> bool
        val aexp_star : Cfg.program -> E.expr Set.t
@@ -44,7 +44,7 @@ module Make(E : sig type expr end)
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ _ n s =
+      let f _ n s =
         let b = n.Cfg_node.stmt in
         let g = gen b in
         let k = kill aexp_star b in

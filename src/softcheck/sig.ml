@@ -61,15 +61,15 @@ module type Transfer = sig
 
   val initial_state : state
 
-  val f : string -> int -> vertex -> state -> state
+  val f : string -> vertex -> state -> state
 end
 
 module type Inter_transfer = sig
   include Transfer
 
-  val f : string -> int -> vertex -> state -> state
-  val f1 : string -> int -> vertex -> state -> state
-  val f2 : string -> string -> int -> vertex -> state -> state -> state
+  val f : string -> vertex -> state -> state
+  val f1 : string -> vertex -> state -> state
+  val f2 : string -> string -> vertex -> state -> state -> state
 end
 
 module type Lattice = sig
@@ -89,12 +89,13 @@ module type Dependencies = sig
   type vertex
 
   val outdep : g_t -> vertex -> vertex list
-  val indep : g_t -> int -> int list
-  val is_extremal : g_t -> int -> bool
+  val indep : g_t -> vertex -> vertex list
+  val is_extremal : g_t -> vertex -> bool
 end
 
 module type Call_context = sig
   type t
+  type vertex
 
   val to_string : t -> string
   val initial_context : t

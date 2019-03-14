@@ -24,7 +24,7 @@ module Make(Ast : sig
       type vertex = Cfg.vertex
       type state = L.property
 
-      let f _ _ b s =
+      let f _ b s =
         let g = S.gen b in
         let k = S.kill aexp_star b in
         (s -. k) ||. g
