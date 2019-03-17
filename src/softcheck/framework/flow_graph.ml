@@ -1,17 +1,20 @@
 module Make_common(C : sig
     type expr
-    type program
 
     val expr_to_string : expr -> string
   end) = struct
+  type expr = C.expr
+  type func = string * string list * expr Cfg_node.t
+  type program = func list * expr Cfg_node.t list
+  type vertex = expr Cfg_node.t
+  type edge_label = Normal | If_true | If_false
+
   module V = struct
     type t = C.expr Cfg_node.t
     let compare x y = compare x.Cfg_node.id y.Cfg_node.id
     let hash x = Hashtbl.hash x.Cfg_node.id
     let equal x y = x.Cfg_node.id = y.Cfg_node.id
   end
-
-  type edge_label = Normal | If_true | If_false
 
   module E = struct
     type t = edge_label
@@ -25,10 +28,6 @@ module Make_common(C : sig
   end
 
   module G = Graph.Imperative.Digraph.ConcreteBidirectionalLabeled(V)(E)
-
-  type expr = C.expr
-  type program = C.program
-  type vertex = expr Cfg_node.t
 
   module Display(X : sig
       val label_to_subgraph : vertex -> Graph.Graphviz.DotAttributes.subgraph

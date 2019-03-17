@@ -2,8 +2,8 @@ open Batteries
 
 module Forward = struct
   module Make_solution(L : Sig.Lattice)(Cfg : Sig.Flow_graph)
-      (F : Sig.Transfer with type vertex = Cfg.vertex and
-      type state = L.property)
+      (F : Sig.Transfer with type vertex = Cfg.vertex
+                         and type state = L.property)
       (P : sig val p : Cfg.program end) = struct
     module Solver = Solvers.Make_fix(L)(Cfg)(F)(Dependencies.Forward(Cfg))
 
@@ -16,8 +16,8 @@ end
 
 module Backward = struct
   module Make_solution(L : Sig.Lattice)(Cfg : Sig.Flow_graph)
-      (F : Sig.Transfer with type vertex = Cfg.vertex and
-      type state = L.property)
+      (F : Sig.Transfer with type vertex = Cfg.vertex
+                         and type state = L.property)
       (P : sig val p : Cfg.program end) =
   struct
     module Solver = Solvers.Make_fix(L)(Cfg)(F)(Dependencies.Backward(Cfg))

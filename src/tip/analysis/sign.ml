@@ -1,32 +1,38 @@
 open Batteries
 open Softcheck
 
-include Analysis.Sign_analysis.Make(Ast)(Cfg)(struct
-    let declaredVars p =
-      List.fold_left
-        (fun acc f ->
-           List.fold_left
-             (fun acc' v -> Set.add v acc') acc f.Ast.func_vars)
-        Set.empty p
+include Analysis.Sign_analysis.Make(Cfg)(struct
+    type expr = Ast.expr
 
-    let sign_eval env = let open Flow in
+    let is_ident =
+      let open Ast in
       function
-        Sassign (Ast.Eident i,rv) ->
-          let rec aux = let open Ast in function
-              Eident x  -> Map.find x env
-            | Ecst x    -> Sign_lattice.sign x
-            | Ebinop(op,e1,e2) -> begin match op with
-                Badd  -> Sign_lattice.plus (aux e1) (aux e2)
-              | Bsub  -> Sign_lattice.minus (aux e1) (aux e2)
-              | Bmul  -> Sign_lattice.times (aux e1) (aux e2)
-              | Bdiv  -> Sign_lattice.divide (aux e1) (aux e2)
-              | Beq | Bgt -> raise (Invalid_argument "cannot eval sign")
-            end
-            | Einput -> Sign_lattice.Top
-            | Ecallf _ | Ecallfptr _ | Eunop _ | Emalloc | Enull ->
-                raise (Invalid_argument "cannot eval sign")
-          in [i,aux rv]
-      | _ -> []
+        Eident _ -> true
+      | _ -> false
+
+    let ident_of_expr =
+      let open Ast in
+      function
+        Eident x -> x
+      | _ -> assert false
+
+    let expr_sign_eval env =
+      let rec aux =
+        let open Ast in
+        function
+          Eident x  -> Map.find x env
+        | Ecst x    -> Sign_lattice.sign x
+        | Ebinop(op,e1,e2) -> begin match op with
+            Badd  -> Sign_lattice.plus (aux e1) (aux e2)
+          | Bsub  -> Sign_lattice.minus (aux e1) (aux e2)
+          | Bmul  -> Sign_lattice.times (aux e1) (aux e2)
+          | Bdiv  -> Sign_lattice.divide (aux e1) (aux e2)
+          | Beq | Bgt -> raise (Invalid_argument "cannot eval sign")
+        end
+        | Einput -> Sign_lattice.Top
+        | Ecallf _ | Ecallfptr _ | Eunop _ | Emalloc | Enull ->
+            raise (Invalid_argument "cannot eval sign") in
+      aux
   end)
 
 (*module ContextSensitiveSignAnalysis(P : sig val p : Ast.program end) = struct

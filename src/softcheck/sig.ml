@@ -28,7 +28,8 @@ module type Flow_graph = sig
   type expr
   type vertex = expr Cfg_node.t
   type edge_label = Normal | If_true | If_false
-  type program 
+  type func = string * string list * expr Cfg_node.t
+  type program = func list * expr Cfg_node.t list
   type t
 
   val create : unit -> t
