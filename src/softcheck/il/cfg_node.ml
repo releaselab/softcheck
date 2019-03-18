@@ -34,16 +34,28 @@ let get_node_data : type a. a node -> a = fun n -> match n.data with
   | Decl d -> d
   | Expr e -> e
 
-let to_string expr_to_string =
+let rec stmt_to_string : type a. (a -> string) -> a stmt -> string =
+  fun expr_to_string ->
   let open Printf in
   function
     Cfg_var_decl v -> sprintf "decl %s" (get_node_data v)
-  | Cfg_assign (lv, rv) -> sprintf "%s = %s" (expr_to_string lv) (expr_to_string rv)
-  | Cfg_guard e -> sprintf "test %s" (expr_to_string e)
+  | Cfg_assign (lv, rv) -> sprintf "%s = %s" (to_string expr_to_string lv)
+                             (to_string expr_to_string rv)
+  | Cfg_guard e -> sprintf "test %s" (to_string expr_to_string e)
   | Cfg_jump -> sprintf "jump"
   | Cfg_call (f, args) ->
-      sprintf "%s (%s)" (expr_to_string f)
-        (Utils.sprint_list ~first:"" ~last:"" ~sep:", " expr_to_string args)
+      sprintf "%s (%s)" (to_string expr_to_string f)
+        (Utils.sprint_list ~first:"" ~last:"" ~sep:", "
+           (to_string expr_to_string) args)
+
+and to_string expr_to_string n =
+  let open Printf in
+  let rec aux n =
+    match n.data with
+      Stmt s -> stmt_to_string expr_to_string s
+    | Decl d -> d
+    | Expr e -> expr_to_string e in
+  aux n
 
 module Make_set(E : sig type t end) = struct
   include Set.Make(struct

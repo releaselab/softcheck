@@ -34,22 +34,29 @@ let flow x =
   let open Set.Infix in
   let ht = Hashtbl.create 10 in
   let rec flow_rec (nodes, flow) n =
+    let new_expr_node node =
+      let open Cfg_node in
+      create ~loc:node.Softlang.loc (Expr (Softlang.get_node_data node)) in
+    let new_decl_node node =
+      let open Cfg_node in
+      create ~loc:node.Softlang.loc (Decl (Softlang.get_node_data node)) in
     let new_node data =
-      let data' = match data with
-          Stmt s -> Cfg_node.Stmt s
-        | Decl d -> Cfg_node.Decl d
-        | Expr e -> Cfg_node.Expr e in
       let n' = Cfg_node.create ~loc:n.Softlang.loc data in
       Hashtbl.add ht n n' in
     match get_node_data n with
       Cfg_assign (lv, rv) ->
-        let () = new_node (Stmt (Cfg_assign (lv, rv))) in
+        let lv' = new_expr_node lv in
+        let rv' = new_expr_node rv in
+        let () = new_node (Stmt (Cfg_assign (lv', rv'))) in
         nodes <-- n, flow
     | Cfg_var_decl v ->
-        let () = new_node (Cfg_var_decl v) in
+        let v' = new_decl_node v in
+        let () = new_node (Stmt (Cfg_var_decl v')) in
         nodes <-- n, flow
     | Cfg_call (f, args) ->
-        let () = new_node (Cfg_call (f, args)) in
+        let f' = new_expr_node f in
+        let args' = List.map new_expr_node args in
+        let () = new_node (Stmt (Cfg_call (f', args'))) in
         nodes <-- n, flow
     | Cfg_seq (s_1, s_2) ->
         let init_s2 = init s_2 in
@@ -57,18 +64,21 @@ let flow x =
         let flow' = flow ||. Set.map (rev_pair init_s2) final_s1 in
         flow_rec (flow_rec (nodes, flow') s_1) s_2
     | Cfg_while (e, b) ->
-        let () = new_node (Cfg_guard e) in
+        let e' = new_expr_node e in
+        let () = new_node (Stmt (Cfg_guard e')) in
         let nodes' = nodes <-- n in
         let flow' = Set.map (rev_pair n)
             (final b) <-- (n, init b) ||. flow in
         flow_rec (nodes', flow') b
     | Cfg_if (e, b)          ->
-        let () = new_node (Cfg_guard e) in
+        let e' = new_expr_node e in
+        let () = new_node (Stmt (Cfg_guard e')) in
         let nodes' = nodes <-- n in
         let flow' = flow <-- (n, init b) in
         flow_rec (nodes', flow') b
     | Cfg_if_else (e, x, y)  ->
-        let () = new_node (Cfg_guard e) in
+        let e' = new_expr_node e in
+        let () = new_node (Stmt (Cfg_guard e')) in
         let nodes' = nodes <-- n in
         let flow' = flow <-- (n, init x) <-- (n, init y) in
         flow_rec (flow_rec (nodes', flow') x) y

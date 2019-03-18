@@ -13,9 +13,9 @@ module type Language_component = sig
 end
 
 module Make(Ast : Sig.Ast)
-    (Cfg : Sig.Flow_graph with type program = Ast.program)
+    (Cfg : Sig.Flow_graph)
     (S : Language_component with type vertex = Cfg.vertex) = struct
-  module Solve(P : sig val p : Ast.program end) = struct
+  module Solve(P : sig val p : Cfg.program end) = struct
     let graph = Cfg.generate_from_program P.p
     let blocks = Cfg.get_blocks graph
 

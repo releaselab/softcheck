@@ -2,13 +2,13 @@ open Batteries
 open Set.Infix
 open Softcheck
 
-module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph with type program = Ast.program)
+module Make(Ast : Sig.Ast)(Cfg : Sig.Flow_graph)
     (S : sig
        include Reaching_definitions.Language_component
        val ta : (string, Taint_lattice.property) Map.t -> vertex ->
          (string * Taint_lattice.property) list
      end with type vertex = Cfg.vertex) = struct
-  module Solve(P : sig val p : Ast.program end) = struct
+  module Solve(P : sig val p : Cfg.program end) = struct
     let graph = Cfg.generate_from_program P.p
     let blocks = Cfg.get_blocks graph
     let vars = S.free_variables blocks

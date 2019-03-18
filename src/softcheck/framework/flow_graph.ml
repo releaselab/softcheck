@@ -60,8 +60,9 @@ module Make_common(C : sig
       let module Helper =
       struct
         let label_to_dot_label n =
-          Printf.sprintf "[%s]^%d" (Cfg_node.to_string C.expr_to_string
-                                      (n.Cfg_node.stmt)) n.Cfg_node.id
+          Printf.sprintf "[%s]^%d" (Cfg_node.to_string (fun x ->
+            C.expr_to_string (Cfg_node.get_node_data x))
+            n) n.Cfg_node.id
         let label_to_subgraph n =
           let fid = Hashtbl.find p n in
           { Graph.Graphviz.DotAttributes.sg_name=fid;
