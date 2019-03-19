@@ -72,14 +72,6 @@ type program = func list
 
 type s_program = s_func * s_func list
 
-let rec contains_ident x = function
-    Ebinop (_,e1,e2)    -> contains_ident x e1 || contains_ident x e2
-  | Ecallf (_,vars)
-  | Ecallfptr (_,vars)  -> List.exists (contains_ident x) vars
-  | Eident _ as i       -> i = x
-  | Eunop (_,e)         -> contains_ident x e
-  | Ecst _ | Enull | Einput | Emalloc -> false
-
 let label_function i f =
   let label () =
     i := !i + 1;

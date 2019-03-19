@@ -25,12 +25,4 @@ include Analysis.Taint.Make(Node)(Cfg)(struct
             |   Bottom, _
             | _, Bottom -> Bottom
             | _ -> Element false
-
-    let ta s = let open Flow in function
-        Sassign (Ast.Eident i,rv) ->
-          let eval_rv = eval s rv in [i, eval_rv]
-      | Sassign _
-      | Sif _
-      | Soutput _
-      | Swhile _ -> []
   end)

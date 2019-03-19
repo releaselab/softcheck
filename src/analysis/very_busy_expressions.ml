@@ -2,31 +2,51 @@ open Batteries
 open Set.Infix
 open Softcheck
 
-module Make(Ast : sig
-    include Sig.Ast
-  end)
-    (Printer : Sig.Printer with type expr = Ast.expr)
-    (Cfg : Sig.Flow_graph with type program = Ast.program)
+module Make(N : Node_sig.S)
+    (Printer : Sig.Printer with type expr = N.expr)
+    (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t and type expr = N.expr)
     (S : sig
-       val aexp_star : Ast.program -> Ast.expr Set.t
-       val gen : Cfg.vertex -> Ast.expr Set.t
-       val kill : Ast.expr Set.t -> Cfg.vertex -> Ast.expr Set.t
+       val aexp : N.expr -> N.expr Set.t
+       val contains_ident : N.expr -> N.expr -> bool
      end) = struct
-  module Solve(P : sig val p : Ast.program end) = struct
-    let aexp_star = S.aexp_star P.p
+  module Solve(P : sig val p : Cfg.program end) = struct
+    module Spec = Node_specifics.Make(N)
+
+    let aexp_star =
+      let graph = Cfg.generate_from_program P.p in
+      let blocks = Cfg.get_blocks graph in
+      Set.fold (fun b acc -> Spec.aexp S.aexp b ||. acc) blocks Set.empty
+
     module L = Lattices.Reverse_powerset_lattice(struct
-        type t = Ast.expr
+        type t = N.expr
         let bottom = aexp_star
         let to_string = Printer.expr_to_string
       end)
+
+    let kill n =
+      let open N in
+      match get_node_data n with
+        Cfg_assign (lv, _) ->
+          Set.filter (S.contains_ident (get_node_data lv)) aexp_star
+      | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ -> Set.empty
+
+    let gen n =
+      let open N in
+      match get_node_data n with
+        Cfg_assign (_, e)
+      | Cfg_guard e -> S.aexp (get_node_data e)
+      | Cfg_call (f, args) ->
+          let f' = S.aexp (get_node_data f) in
+          List.fold_left (fun acc e -> acc ||. S.aexp (get_node_data e)) f' args
+      | Cfg_jump | Cfg_var_decl _ -> Set.empty
 
     module F = struct
       type vertex = Cfg.vertex
       type state = L.property
 
       let f _ b s =
-        let g = S.gen b in
-        let k = S.kill aexp_star b in
+        let g = gen b in
+        let k = kill b in
         (s -. k) ||. g
 
       let initial_state = Set.empty

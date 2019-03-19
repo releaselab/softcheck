@@ -6,14 +6,17 @@ module Make(N : Node_sig.S)(Cfg : Sig.Flow_graph with type vertex = N.stmt N.t
                                                   and type expr = N.expr)
     (S : sig
        include Reaching_definitions.Language_component
-       val ta : (string, Taint_lattice.property) Map.t -> vertex ->
-         (string * Taint_lattice.property) list
+
+       val eval : (string, Taint_lattice.property) Map.t -> expr ->
+         Taint_lattice.property
      end with type vertex = Cfg.vertex and type expr = N.expr) = struct
   module RD_S = Reaching_definitions.Make(N)(Cfg)(S)
   module Solve(P : sig val p : Cfg.program end) = struct
+    module RD = RD_S.Solve(P)
+
     let graph = Cfg.generate_from_program P.p
     let blocks = Cfg.get_blocks graph
-    let vars = S.free_variables blocks
+    let vars = RD.Spec.free_variables S.free_variables blocks
 
     module Var_tainting_lattice = Lattices.Map_lattice(struct
         type t = string
@@ -30,7 +33,14 @@ module Make(N : Node_sig.S)(Cfg : Sig.Flow_graph with type vertex = N.stmt N.t
 
     module L = Lattices.Pair_lattice(Reaching_definitions_lattice)(Var_tainting_lattice)
 
-    module RD = RD_S.Solve(P)
+    let ta s n =
+      let open N in
+      match get_node_data n with
+        Cfg_assign (lv, rv) when S.is_ident (get_node_data lv) ->
+          let eval_rv = S.eval s (get_node_data rv) in
+          [S.ident_of_expr (get_node_data lv), eval_rv]
+      | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
+          []
 
     module F = struct
       type vertex = Cfg.vertex
@@ -40,7 +50,7 @@ module Make(N : Node_sig.S)(Cfg : Sig.Flow_graph with type vertex = N.stmt N.t
         let g = RD.gen b in
         let k = RD.kill blocks b in
         let s1 = (fst s -. k) ||. g in
-        let new_tv = S.ta (snd s) b in
+        let new_tv = ta (snd s) b in
         let s2 = List.fold_left (fun m (i,eval) -> Var_tainting_lattice.set m i eval) (snd s) new_tv in
         s1, s2
 

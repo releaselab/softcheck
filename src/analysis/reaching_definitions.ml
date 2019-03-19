@@ -10,7 +10,7 @@ module type Language_component = sig
   type expr
   val is_ident : expr -> bool
   val ident_of_expr : expr -> string
-  val free_variables : blocks -> string Set.t
+  val free_variables : expr -> string Set.t
 end
 
 module Make(N : Node_sig.S)
@@ -28,13 +28,7 @@ module Make(N : Node_sig.S)
           | Some n' -> string_of_int (n'.N.id))
       end)
 
-    let find_assignments blocks x =
-      let open N in
-      let aux b acc = match get_node_data b with
-          Cfg_assign (lv, _) when lv.id = x.id -> Set.add b acc
-        | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
-            acc in
-      Set.fold aux blocks Set.empty
+    module Spec = Node_specifics.Make(N)
 
     let kill blocks n =
       let pair x y = (x, y) in
@@ -42,8 +36,9 @@ module Make(N : Node_sig.S)
       match get_node_data n with
         Cfg_assign (lv, _) when S.is_ident (get_node_data lv) ->
           let lv' = S.ident_of_expr (get_node_data lv) in
-          Set.map (pair lv' % Option.some) (find_assignments blocks lv) <-- (lv', None)
-      | _ -> Set.empty
+          Set.map (pair lv' % Option.some) (Spec.find_assignments blocks lv) <-- (lv', None)
+      | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _->
+          Set.empty
 
     let gen n =
       let open N in
@@ -63,7 +58,8 @@ module Make(N : Node_sig.S)
         let k = kill blocks n in
         (s -. k) ||. g
 
-      let initial_state = Set.map (fun x -> x,None) (S.free_variables blocks)
+      let initial_state =
+        Set.map (fun x -> x, None) (Spec.free_variables S.free_variables blocks)
     end
 
     module Fix = Solvers.Make_fix(L)(Cfg)(F)(Dependencies.Forward(Cfg))
