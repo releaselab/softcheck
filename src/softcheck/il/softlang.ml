@@ -1,51 +1,81 @@
 open Batteries
 
-type decl = string
+module Make(E : sig type t end) = struct
+  type expr = E.t
 
-type 'a stmt =
-    Cfg_var_decl of decl node
-  | Cfg_assign of 'a node * 'a node
-  | Cfg_if of 'a node * 'a stmt node
-  | Cfg_if_else of 'a node * 'a stmt node * 'a stmt node
-  | Cfg_while of 'a node * 'a stmt node
-  | Cfg_jump of 'a stmt node
-  | Cfg_call of 'a node * 'a node list
-  | Cfg_seq of 'a stmt node *'a stmt node
+  type ident = string
 
-and _ node_data =
-    Stmt : 'a stmt -> 'a stmt node_data
-  | Decl : decl -> decl node_data
-  | Expr : 'a -> 'a node_data
+  type stmt =
+      Cfg_var_decl of ident t
+    | Cfg_assign of expr t * expr t
+    | Cfg_if of expr t * stmt t
+    | Cfg_if_else of expr t * stmt t * stmt t
+    | Cfg_while of expr t * stmt t
+    | Cfg_jump of stmt t
+    | Cfg_call of expr t * expr t list
+    | Cfg_seq of stmt t * stmt t
 
-and 'a node = {
-  id: int;
-  loc: Common.loc;
-  data: 'a node_data
-}
+  and _ node_data =
+      Stmt : stmt -> stmt node_data
+    | Decl : ident -> ident node_data
+    | Expr : expr -> expr node_data
 
-let get_node_data : type a. a node -> a = fun n -> match n.data with
-    Stmt s -> s
-  | Decl d -> d
-  | Expr e -> e
+  and 'a t = {
+    id: int;
+    loc: Common.loc;
+    data: 'a node_data
+  }
 
-let counter = ref (-1)
+  let get_node_data : type a. a t -> a = fun n -> match n.data with
+      Stmt s -> s
+    | Decl d -> d
+    | Expr e -> e
 
-let next_counter () =
-  let () = counter := !counter + 1 in
-  !counter
+  let counter = ref (-1)
 
-let create ?loc:(loc=Common.Unknown) data =
-  { id = next_counter (); loc; data }
+  let next_counter () =
+    let () = counter := !counter + 1 in
+    !counter
 
-module Make_set(E : sig type t end) = struct
-  include Set.Make(struct
-      type t = E.t node
-      let compare x y = compare x.id y.id
-    end)
+  let create ?loc:(loc=Common.Unknown) data =
+    { id = next_counter (); loc; data }
+
+  type func = string * ident t list * stmt t
+
+  type program = ident t list * func list
 end
 
-type 'a t = 'a node
+module type S = sig
+  type expr
 
-type 'a func = string * decl list * 'a t
+  type ident = string
 
-type 'a program = decl list * ('a func) list
+  type stmt =
+      Cfg_var_decl of ident t
+    | Cfg_assign of expr t * expr t
+    | Cfg_if of expr t * stmt t
+    | Cfg_if_else of expr t * stmt t * stmt t
+    | Cfg_while of expr t * stmt t
+    | Cfg_jump of stmt t
+    | Cfg_call of expr t * expr t list
+    | Cfg_seq of stmt t * stmt t
+
+  and _ node_data =
+      Stmt : stmt -> stmt node_data
+    | Decl : ident -> ident node_data
+    | Expr : expr -> expr node_data
+
+  and 'a t = {
+    id: int;
+    loc: Common.loc;
+    data: 'a node_data
+  }
+
+  val get_node_data : 'a t -> 'a
+
+  val create : ?loc:Common.loc -> 'a node_data -> 'a t
+
+  type func = string * ident t list * stmt t
+
+  type program = ident t list * func list
+end

@@ -1,7 +1,7 @@
 open Batteries
 open Softcheck
 
-include Analysis.Sign_analysis.Make(Cfg)(struct
+include Analysis.Sign_analysis.Make(Node)(Cfg)(struct
     type expr = Ast.expr
 
     let is_ident =

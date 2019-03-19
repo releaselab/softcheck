@@ -1,7 +1,8 @@
 open Batteries
 open Softcheck
 
-module Make(Cfg : Sig.Flow_graph)
+module Make(N : Node_sig.S)
+    (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t and type expr = N.expr)
     (S : sig
        type expr
 
@@ -11,28 +12,28 @@ module Make(Cfg : Sig.Flow_graph)
          Sign_lattice.property
      end with type expr = Cfg.expr) = struct
   module Solve(P : sig val p : Cfg.program end) = struct
-    let declaredVars =
-      let aux ((funcs, global_vars) : Cfg.program) =
-        let ht = Hashtbl.create 10 in
-        let () = List.iter (fun (f, vars, _) ->
-          List.fold_left (fun acc v -> Set.add v acc) Set.empty vars |>
-          Hashtbl.add ht f) funcs in
-        ht in
-      aux P.p
+    let declaredVars = Set.empty
+    (*let aux ((funcs, global_vars) : Cfg.program) =
+      let ht = Hashtbl.create 10 in
+      let () = List.iter (fun (f, vars, _) ->
+        List.fold_left (fun acc v -> Set.add v acc) Set.empty vars |>
+        Hashtbl.add ht f) funcs in
+      ht in
+      aux P.p*)
 
     module L = Lattices.Map_lattice(struct
-        type t = string
+        type t = N.ident
         let to_string = identity
         let bottom_elems = declaredVars
       end)(Sign_lattice)
 
     let sign_eval env n =
-      let open Cfg_node in
-      match n.stmt with
-        Cfg_assign (lv,rv) when S.is_ident lv ->
-          [S.ident_of_expr lv, S.expr_sign_eval env rv]
-      | Cfg_var_decl v -> [v, Sign_lattice.bottom]
-      | Cfg_assign _ | Cfg_guard _ | Cfg_jump _ | Cfg_call _ -> []
+      let open N in
+      match get_node_data n with
+        Cfg_assign (lv,rv) when S.is_ident (get_node_data lv) ->
+          [S.ident_of_expr (get_node_data lv), S.expr_sign_eval env (get_node_data rv)]
+      | Cfg_var_decl v -> [(get_node_data v), Sign_lattice.bottom]
+      | Cfg_assign _ | Cfg_guard _ | Cfg_jump | Cfg_call _ -> []
 
     module F = struct
       type vertex = Cfg.vertex

@@ -1,7 +1,7 @@
 open Batteries
 open Softcheck
 
-include Analysis.Taint.Make(Ast)(Cfg)(struct
+include Analysis.Taint.Make(Node)(Cfg)(struct
     include Reaching_definitions.S
 
     let rec eval s = let open Ast in

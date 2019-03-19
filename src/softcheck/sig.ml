@@ -13,23 +13,27 @@ module type Printer = sig
 end
 
 module type Flow = sig
-  type ast_stmt
   type block
-  type program
-  type func
-  val to_string : block -> string
-  val init : ast_stmt -> int
-  val final : ast_stmt -> int Set.t
-  val flow : func -> (int * int) Set.t
-  val flowR : func -> (int * int) Set.t
+  type vertex
+  type t = {
+    correspondence: (block, vertex) Hashtbl.t; 
+    nodes: vertex Set.t;
+    initial: vertex Set.t;
+    final: vertex Set.t;
+    flow: (vertex * vertex) Set.t
+  }
+
+  val init : block -> block
+  val final : block -> block Set.t
+  val flow : block -> t
+  val flowR : block -> t
 end
 
 module type Flow_graph = sig
   type expr
-  type vertex = expr Cfg_node.t
+  type vertex
   type edge_label = Normal | If_true | If_false
-  type func = string * string list * expr Cfg_node.t
-  type program = func list * expr Cfg_node.t list
+  type program
   type t
 
   val create : unit -> t

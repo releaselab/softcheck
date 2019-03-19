@@ -1,36 +1,37 @@
-open Batteries
+module type S = sig
+  type expr
 
-type decl = string
+  type ident = string
 
-type 'a stmt =
-    Cfg_var_decl of decl node
-  | Cfg_assign of 'a node * 'a node
-  | Cfg_if of 'a node * 'a stmt node
-  | Cfg_if_else of 'a node * 'a stmt node * 'a stmt node
-  | Cfg_while of 'a node * 'a stmt node
-  | Cfg_jump of 'a stmt node
-  | Cfg_call of 'a node * 'a node list
-  | Cfg_seq of 'a stmt node *'a stmt node
+  type stmt =
+      Cfg_var_decl of ident t
+    | Cfg_assign of expr t * expr t
+    | Cfg_if of expr t * stmt t
+    | Cfg_if_else of expr t * stmt t * stmt t
+    | Cfg_while of expr t * stmt t
+    | Cfg_jump of stmt t
+    | Cfg_call of expr t * expr t list
+    | Cfg_seq of stmt t * stmt t
 
-and _ node_data =
-    Stmt : 'a stmt -> 'a stmt node_data
-  | Decl : decl -> decl node_data
-  | Expr : 'a -> 'a node_data
+  and _ node_data =
+      Stmt : stmt -> stmt node_data
+    | Decl : ident -> ident node_data
+    | Expr : expr -> expr node_data
 
-and 'a node = {
-  id: int;
-  loc: Common.loc;
-  data: 'a node_data
-}
+  and 'a t = {
+    id: int;
+    loc: Common.loc;
+    data: 'a node_data
+  }
 
-val get_node_data : 'a node -> 'a
+  val get_node_data : 'a t -> 'a
 
-val create : ?loc:Common.loc -> 'a node_data -> 'a node
+  val create : ?loc:Common.loc -> 'a node_data -> 'a t
 
-module Make_set : functor (E : sig type t end) -> Set.S
+  type func = string * ident t list * stmt t
 
-type 'a t = 'a node
+  type program = ident t list * func list
+end
 
-type 'a func = string * decl list * 'a t
-
-type 'a program = decl list * 'a func list
+module Make : functor
+  (E : sig type t end) -> S with type expr = E.t

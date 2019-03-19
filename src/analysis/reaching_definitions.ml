@@ -7,14 +7,16 @@ module type Language_component = sig
   type blocks = vertex Set.t
   type definition_location = string * vertex option
 
+  type expr
+  val is_ident : expr -> bool
+  val ident_of_expr : expr -> string
   val free_variables : blocks -> string Set.t
-  val gen : vertex -> definition_location Set.t
-  val kill : blocks -> vertex -> definition_location Set.t
 end
 
-module Make(Ast : Sig.Ast)
-    (Cfg : Sig.Flow_graph)
-    (S : Language_component with type vertex = Cfg.vertex) = struct
+module Make(N : Node_sig.S)
+    (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t)
+    (S : Language_component with type vertex = Cfg.vertex and type expr = N.expr)
+= struct
   module Solve(P : sig val p : Cfg.program end) = struct
     let graph = Cfg.generate_from_program P.p
     let blocks = Cfg.get_blocks graph
@@ -23,16 +25,42 @@ module Make(Ast : Sig.Ast)
         type t = S.definition_location
         let to_string (v, n) = Printf.sprintf "(%s,%s)" v (match n with
             None    -> "?"
-          | Some n' -> string_of_int (n'.Cfg_node.id))
+          | Some n' -> string_of_int (n'.N.id))
       end)
+
+    let find_assignments blocks x =
+      let open N in
+      let aux b acc = match get_node_data b with
+          Cfg_assign (lv, _) when lv.id = x.id -> Set.add b acc
+        | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
+            acc in
+      Set.fold aux blocks Set.empty
+
+    let kill blocks n =
+      let pair x y = (x, y) in
+      let open N in
+      match get_node_data n with
+        Cfg_assign (lv, _) when S.is_ident (get_node_data lv) ->
+          let lv' = S.ident_of_expr (get_node_data lv) in
+          Set.map (pair lv' % Option.some) (find_assignments blocks lv) <-- (lv', None)
+      | _ -> Set.empty
+
+    let gen n =
+      let open N in
+      match get_node_data n with
+        Cfg_assign (lv, _) when S.is_ident (get_node_data lv) ->
+          let lv' = S.ident_of_expr (get_node_data lv) in
+          Set.singleton (lv', Some n)
+      | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
+          Set.empty
 
     module F = struct
       type vertex = Cfg.vertex
       type state = L.property
 
       let f _ n s =
-        let g = S.gen n in
-        let k = S.kill blocks n in
+        let g = gen n in
+        let k = kill blocks n in
         (s -. k) ||. g
 
       let initial_state = Set.map (fun x -> x,None) (S.free_variables blocks)
