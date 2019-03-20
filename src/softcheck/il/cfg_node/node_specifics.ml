@@ -1,6 +1,6 @@
 open Batteries
 
-module Make(N : Node_sig.S) = struct
+module Make(N : Cfg_node.S) = struct
   open N
 
   let free_variables free_variables blocks =

@@ -13,7 +13,7 @@ module type Language_component = sig
   val free_variables : expr -> string Set.t
 end
 
-module Make(N : Node_sig.S)
+module Make(N : Cfg_node.S)
     (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t)
     (S : Language_component with type vertex = Cfg.vertex and type expr = N.expr)
 = struct

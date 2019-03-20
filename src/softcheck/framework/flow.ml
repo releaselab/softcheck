@@ -1,6 +1,6 @@
 open Batteries
 
-module Make(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr) = struct
+module Make(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr) = struct
   (* FIXME: check jumps *)
   type block = Sl.stmt Sl.t
   type vertex = N.stmt N.t

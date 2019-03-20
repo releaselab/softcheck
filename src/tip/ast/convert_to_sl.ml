@@ -1,13 +1,5 @@
 open Batteries
 
-type program = Ast.program
-
-type func = Ast.func
-
-type expr = Ast.expr
-
-let expr_to_string = Printer.expr_to_string
-
 let rec stmt_to_node =
   let open Ast in
   let open Sl_node in
@@ -34,7 +26,7 @@ let rec stmt_to_node =
         create (Stmt (Cfg_seq (acc, stmt_to_node s)))) (stmt_to_node h) t
   | Sblock [] -> assert false
 
-let global_decls _ = []
+let global_decls : Ast.program -> Sl_node.ident Sl_node.t list = fun _ -> [] (* TODO: *)
 
 let funcs =
   let open Sl_node in
@@ -45,10 +37,10 @@ let funcs =
           create (Stmt (Cfg_seq (acc, create (Stmt (Cfg_var_decl d))))))
           (create (Stmt (Cfg_var_decl h))) t in
   List.map (fun f ->
-    let decls = process_decls (List.map (fun v ->
-      create (Decl v)) f.Ast.func_vars) in
-    f.Ast.func_id, f.Ast.func_vars,
-    create (Stmt (Cfg_seq (decls, stmt_to_node f.Ast.func_body))))
+    let decls = List.map (fun v -> create (Decl v)) f.Ast.func_vars in
+    let decls' = process_decls decls in
+    f.Ast.func_id, decls,
+    create (Stmt (Cfg_seq (decls', stmt_to_node f.Ast.func_body))))
 
 let convert_program p =
   global_decls p, funcs p

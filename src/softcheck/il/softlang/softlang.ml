@@ -75,7 +75,7 @@ module type S = sig
 
   val create : ?loc:Common.loc -> 'a node_data -> 'a t
 
-  type func = string * ident t list * stmt t
+  type func = ident * ident t list * stmt t
 
   type program = ident t list * func list
 end

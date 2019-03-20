@@ -1,4 +1,4 @@
-module Make_common(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
+module Make_common(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     (C : sig type program end) =
 struct
   type program = C.program
@@ -79,14 +79,12 @@ struct
   end
 end
 
-module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
+module Make_cfg(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     (F : Sig.Flow with type block = Sl.stmt Sl.t and type vertex = N.stmt N.t)
     (C : sig
        type program
-       type func = Sl.ident * Sl.ident list * Sl.stmt Sl.t
 
-       val funcs : program -> func list
-       val global_decls : program -> N.stmt N.t list
+       val convert_program_to_sl : program -> Sl.program
      end) = struct
   open Batteries
 
@@ -133,10 +131,9 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
 
   let generate_from_program p =
     let open Batteries in
-    let graph = create() in
+    let graph = create () in
     let pBlocks = Hashtbl.create 10 in
-    let global_decls = C.global_decls p  in
-    let funcs = C.funcs p in
+    let global_decls, funcs = C.convert_program_to_sl p in
     let () =
       Hashtbl.iter (fun id blocks -> Set.iter (add graph id) blocks) pBlocks in
     let add_edge (i, j) = connect graph i j in
@@ -161,7 +158,7 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
     graph
 end
 
-module Make_inter_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
+module Make_inter_cfg(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     (F : Sig.Flow with type block = Sl.stmt Sl.t and type vertex = N.stmt N.t)
     (C : sig
        type program

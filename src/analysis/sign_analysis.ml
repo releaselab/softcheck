@@ -1,7 +1,7 @@
 open Batteries
 open Softcheck
 
-module Make(N : Node_sig.S)
+module Make(N : Cfg_node.S)
     (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t and type expr = N.expr)
     (S : sig
        type expr

@@ -1,4 +1,5 @@
 
+(copy_files# cfg/*)
 (copy_files# il/*)
 (copy_files# il/cfg_node/*)
 (copy_files# il/softlang/*)

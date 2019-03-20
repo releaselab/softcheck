@@ -39,7 +39,7 @@ module Make_fix(Cfg : Sig.Flow_graph)
   let solve graph = Fix.lfp (generate_equations graph)
 end
 
-module Make_fix_inter(N : Node_sig.S)
+module Make_fix_inter(N : Cfg_node.S)
     (Cfg : Sig.Inter_flow_graph with type vertex = N.stmt N.t
                                  and type expr = N.expr)
     (L : Sig.Lattice)
