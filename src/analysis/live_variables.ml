@@ -6,7 +6,7 @@ module Make(N : Node_sig.S)
     (S : sig
        val free_variables : N.expr -> N.ident Set.t
      end) = struct
-  module Solve(P : sig val p : Cfg.program end) = struct
+  module Solve(P : sig val graph : Cfg.t end) = struct
     module L = Lattices.Powerset_lattice(struct
         type t = string
         let to_string = identity

@@ -11,9 +11,10 @@ let show_cfg = Cfg.show % Cfg.generate_from_program
 let ae p =
   let open Printf in
   print_endline "Available Expressions";
-  let module AvailableExpressions = Available_expressions.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module AvailableExpressions = Available_expressions.Solve(struct let graph = graph end) in
   let open AvailableExpressions in
-  let labels = List.fold_left (fun acc f -> Set.union (Flow.labels f) acc) Set.empty p in
+  let labels = Cfg.labels graph in
   print_endline "Entry";
   Set.iter (fun l -> printf "%d: %s\n" l (get_entry_result l |> result_to_string)) labels;
   print_endline "Exit";
@@ -22,9 +23,10 @@ let ae p =
 let rd p =
   let open Printf in
   print_endline "Reaching Definitions";
-  let module ReachingDefinitions = Reaching_definitions.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module ReachingDefinitions = Reaching_definitions.Solve(struct let graph = graph end) in
   let open ReachingDefinitions in
-  let labels = List.fold_left (fun acc f -> Set.union (Flow.labels f) acc) Set.empty p in
+  let labels = Cfg.labels graph in
   print_endline "Entry";
   Set.iter (fun l -> printf "%d: %s\n" l (get_entry_result l |> result_to_string)) labels;
   print_endline "Exit";
@@ -33,9 +35,10 @@ let rd p =
 let vb p =
   let open Printf in
   print_endline "Very Busy Expressions";
-  let module VeryBusyExpressions = Very_busy_expressions.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module VeryBusyExpressions = Very_busy_expressions.Solve(struct let graph = graph end) in
   let open VeryBusyExpressions in
-  let labels = List.fold_left (fun acc f -> Set.union (Flow.labels f) acc) Set.empty p in
+  let labels = Cfg.labels graph in
   print_endline "Entry";
   Set.iter (fun l -> printf "%d: %s\n" l (get_entry_result l |> result_to_string)) labels;
   print_endline "Exit";
@@ -44,9 +47,10 @@ let vb p =
 let lv p =
   let open Printf in
   print_endline "Live Variables";
-  let module LiveVariables = Live_variables.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module LiveVariables = Live_variables.Solve(struct let graph = graph end) in
   let open LiveVariables in
-  let labels = List.fold_left (fun acc f -> Set.union (Flow.labels f) acc) Set.empty p in
+  let labels = Cfg.labels graph in
   print_endline "Entry";
   Set.iter (fun l -> printf "%d: %s\n" l (get_entry_result l |> result_to_string)) labels;
   print_endline "Exit";
@@ -55,9 +59,10 @@ let lv p =
 let sa p =
   let open Printf in
   print_endline "Sign";
-  let module SignAnalysis = Sign.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module SignAnalysis = Sign.Solve(struct let graph = graph end) in
   let open SignAnalysis in
-  let labels = List.fold_left (fun acc f -> Set.union (Flow.labels f) acc) Set.empty p in
+  let labels = Cfg.labels graph in
   print_endline "Entry";
   Set.iter (fun l -> printf "%d: %s\n" l (get_entry_result l |> result_to_string)) labels;
   print_endline "Exit";
@@ -66,11 +71,15 @@ let sa p =
 let ta p =
   let open Printf in
   print_endline "Taint Analysis";
-  let module TaintAnalysis = Taint.Solve(struct let p = p end) in
+  let graph = Cfg.generate_from_program p in
+  let module TaintAnalysis = Taint.Solve(struct let graph = graph end) in
   let open TaintAnalysis in
-  let sinks = Set.fold (fun (l,b) acc -> match b with
-      Tip.Flow.Soutput e -> (l,e) :: acc
-    | _ -> acc) (Flow.blocks (List.hd p)) [] |> List.rev in
+  let sinks = Hashtbl.fold (fun l n acc ->
+    let open Node in
+    match get_node_data n with
+      Cfg_call (_, args) ->
+        List.fold_left (fun acc n -> (l, get_node_data n) :: acc) acc args
+    | _ -> acc) (Cfg.get_blocks graph) [] |> List.rev in
   let aux (l,e) =
     let result = snd (get_entry_result l) in
     let open Tip.Ast in

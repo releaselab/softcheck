@@ -48,6 +48,7 @@ module type Flow_graph = sig
   val get_func_id : t -> int -> string
   val extremal : t -> int -> unit
   val extremalR : t -> int -> unit
+  val labels : t -> int Set.t
   val dot_output : t -> string -> unit
   val display_with_gv : t -> unit
   val show : t -> unit
@@ -57,7 +58,7 @@ end
 module type Inter_flow_graph = sig
   include Flow_graph
 
-  val inter_flow : t -> (vertex * vertex * vertex * vertex) list
+  val inter_flow : t -> (int * int * int * int) list
   (* TODO: val callees : t -> int -> int list *)
 end
 

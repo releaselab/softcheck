@@ -11,11 +11,10 @@ module Make(N : Node_sig.S)(Cfg : Sig.Flow_graph with type vertex = N.stmt N.t
          Taint_lattice.property
      end with type vertex = Cfg.vertex and type expr = N.expr) = struct
   module RD_S = Reaching_definitions.Make(N)(Cfg)(S)
-  module Solve(P : sig val p : Cfg.program end) = struct
+  module Solve(P : sig val graph : Cfg.t end) = struct
     module RD = RD_S.Solve(P)
 
-    let graph = Cfg.generate_from_program P.p
-    let blocks = Cfg.get_blocks graph
+    let blocks = Hashtbl.fold (fun _ -> Set.add) (Cfg.get_blocks P.graph) Set.empty
     let vars = RD.Spec.free_variables S.free_variables blocks
 
     module Var_tainting_lattice = Lattices.Map_lattice(struct

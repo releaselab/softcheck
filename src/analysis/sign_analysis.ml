@@ -11,7 +11,7 @@ module Make(N : Node_sig.S)
        val expr_sign_eval : (string, Sign_lattice.property) Map.t -> expr ->
          Sign_lattice.property
      end with type expr = Cfg.expr) = struct
-  module Solve(P : sig val p : Cfg.program end) = struct
+  module Solve(P : sig val graph : Cfg.t end) = struct
     let declaredVars = Set.empty
     (*let aux ((funcs, global_vars) : Cfg.program) =
       let ht = Hashtbl.create 10 in

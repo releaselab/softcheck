@@ -19,9 +19,12 @@ module Make_fix(Cfg : Sig.Flow_graph)
 = struct
   type variable = Circ of int | Bullet of int
 
-  module Fix = Fix.ForOrderedType(struct
-      type t = int
-      let compare = compare
+  module Fix = Fix.ForHashedType(struct
+      type t = variable
+      let hash = Hashtbl.hash
+      let equal a b = match a, b with
+          Circ x, Circ y | Bullet x, Bullet y -> x = y
+        | _ -> false
     end)(L)
 
   let generate_equations graph var state =
@@ -31,7 +34,7 @@ module Make_fix(Cfg : Sig.Flow_graph)
                   (if D.is_extremal graph l then F.initial_state
                    else L.bottom)
     | Bullet l ->
-        F.f (Cfg.get_func_id graph l) l (state (Circ l))
+        F.f (Cfg.get_func_id graph l) (Cfg.get graph l) (state (Circ l))
 
   let solve graph = Fix.lfp (generate_equations graph)
 end
@@ -44,33 +47,36 @@ module Make_fix_inter(N : Node_sig.S)
                              and type state = L.property)
     (D : Dependencies.S with type g_t = Cfg.t)
 = struct
-  type variable = Circ of Cfg.vertex | Bullet of Cfg.vertex
+  type variable = Circ of int | Bullet of int
 
   module Fix = Fix.ForHashedType(struct
       type t = variable
       let hash = Hashtbl.hash
       let equal a b = match a, b with
-          Circ x, Circ y | Bullet x, Bullet y -> x.N.id = y.N.id
+          Circ x, Circ y | Bullet x, Bullet y -> x = y
         | _ -> false
     end)(L)
 
   let generate_equations graph var state =
     match var with
-    | Circ l -> D.indep graph l |> List.map (fun l' -> state (Bullet l'))
-                |> List.fold_left L.lub
-                  (if D.is_extremal graph l then F.initial_state
-                   else L.bottom)
-    | Bullet l -> let fid = Cfg.get_func_id graph l in
-        if Cfg.inter_flow graph |> List.exists (fun (lc,_,_,_) -> lc = l) then
-          F.f1 (Cfg.get_func_id graph l) l (state (Circ l))
-        else if Cfg.inter_flow graph |> List.exists (fun (_,_,_,lr) -> lr = l) then
+    | Circ l ->
+        D.indep graph l |> List.map (fun l' -> state (Bullet l'))
+        |> List.fold_left L.lub
+          (if D.is_extremal graph l then F.initial_state
+           else L.bottom)
+    | Bullet l ->
+        let v = Cfg.get graph l in
+        let fid = Cfg.get_func_id graph l in
+        if List.exists (fun (lc,_,_,_) -> lc = l) (Cfg.inter_flow graph) then
+          F.f1 (Cfg.get_func_id graph l) v (state (Circ l))
+        else if List.exists (fun (_,_,_,lr) -> lr = l) (Cfg.inter_flow graph) then
           Cfg.inter_flow graph |> List.filter_map (fun (lc,_,_,lr) ->
             if lr = l then Some (Cfg.get_func_id graph lc,lc) else None) |>
           List.fold_left (fun acc (fid2,lc) ->
-            F.f2 fid fid2 l (state (Circ lc)) (state (Circ l))
+            F.f2 fid fid2 v (state (Circ lc)) (state (Circ l))
             |> L.lub acc) L.bottom
         else
-          F.f (Cfg.get_func_id graph l) l (state (Circ l))
+          F.f (Cfg.get_func_id graph l) v (state (Circ l))
 
   let solve graph = generate_equations graph |> Fix.lfp
 end

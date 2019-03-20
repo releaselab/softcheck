@@ -9,12 +9,12 @@ module Make(N : Node_sig.S)
        val aexp : N.expr -> N.expr Set.t
        val contains_ident : N.expr -> N.expr -> bool
      end) = struct
-  module Solve(P : sig val p : Cfg.program end) = struct
+  module Solve(P : sig val graph : Cfg.t end) = struct
     module Spec = Node_specifics.Make(N)
 
     let aexp_star =
-      let graph = Cfg.generate_from_program P.p in
-      let blocks = Cfg.get_blocks graph in
+      let blocks =
+        Hashtbl.fold (fun _ -> Set.add) (Cfg.get_blocks P.graph) Set.empty in
       Set.fold (fun b acc -> Spec.aexp S.aexp b ||. acc) blocks Set.empty
 
     module L = Lattices.Reverse_powerset_lattice(struct

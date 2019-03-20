@@ -17,9 +17,8 @@ module Make(N : Node_sig.S)
     (Cfg : Sig.Flow_graph with type vertex = N.stmt N.t)
     (S : Language_component with type vertex = Cfg.vertex and type expr = N.expr)
 = struct
-  module Solve(P : sig val p : Cfg.program end) = struct
-    let graph = Cfg.generate_from_program P.p
-    let blocks = Cfg.get_blocks graph
+  module Solve(P : sig val graph : Cfg.t end) = struct
+    let blocks = Hashtbl.fold (fun _ -> Set.add) (Cfg.get_blocks P.graph) Set.empty
 
     module L = Lattices.Powerset_lattice(struct
         type t = S.definition_location
@@ -62,9 +61,9 @@ module Make(N : Node_sig.S)
         Set.map (fun x -> x, None) (Spec.free_variables S.free_variables blocks)
     end
 
-    module Fix = Solvers.Make_fix(L)(Cfg)(F)(Dependencies.Forward(Cfg))
+    module Fix = Solvers.Make_fix(Cfg)(L)(F)(Dependencies.Forward(Cfg))
 
-    let solution = Fix.solve graph
+    let solution = Fix.solve P.graph
 
     let get_entry_result l = solution (Fix.Circ l)
     let get_exit_result l = solution (Fix.Bullet l)

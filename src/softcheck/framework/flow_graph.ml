@@ -59,7 +59,7 @@ struct
         let label_to_dot_label n =
           Printf.sprintf "[%s]^%d" (N.to_string n) n.N.id
         let label_to_subgraph n =
-          let fid = Hashtbl.find p n in
+          let fid = Hashtbl.find p n.N.id in
           { Graph.Graphviz.DotAttributes.sg_name=fid;
             sg_attributes=[`Label fid]; sg_parent=None }
       end
@@ -96,8 +96,8 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
     blocks: (int, vertex) Hashtbl.t;
     flow: G.t;
     functions: (int, string) Hashtbl.t;
-    mutable extremals: vertex list;
-    mutable extremalsR: vertex list
+    mutable extremals: int list;
+    mutable extremalsR: int list
   }
 
   let create () = {
@@ -111,12 +111,8 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
   let outflow g i =
     let n = get g i in
     Wrapper.outflow g.flow n
-  let is_extremal g i =
-    let n = get g i in
-    Wrapper.is_extremal g.extremals n
-  let is_extremalR g i =
-    let n = get g i in
-    Wrapper.is_extremal g.extremalsR n
+  let is_extremal g = Wrapper.is_extremal g.extremals
+  let is_extremalR g = Wrapper.is_extremal g.extremalsR
   let add t func_id v =
     let () = Hashtbl.add t.blocks v.N.id v in
     Wrapper.add t.flow t.functions func_id v v.N.id
@@ -125,6 +121,7 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
   let get_func_id { functions = p; _ } = Hashtbl.find p
   let extremal t l = t.extremals <- l::t.extremals
   let extremalR t l = t.extremalsR <- l::t.extremalsR
+  let labels { blocks; _ } = Hashtbl.fold (fun l _ -> Set.add l) blocks Set.empty
 
   let dot_output { blocks = b; flow = g; functions = p; _ } =
     Wrapper.dot_output b g p
@@ -153,9 +150,9 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
     let () = List.iter (fun (f, _, b) ->
       let { F.correspondence = ht; initial; nodes; flow; _ } = F.flow b in
       let init = Hashtbl.find ht (F.init b) in
-      let () = extremal graph init in
+      let () = extremal graph init.id in
       let finals = Set.map (Hashtbl.find ht) (F.final b) in
-      let () = Set.iter (extremal graph) finals in
+      let () = Set.iter (fun n -> extremal graph n.N.id) finals in
       let () = Hashtbl.replace pBlocks f nodes in
       let () = match last_decl with
           Some l -> Set.iter (fun i -> add_edge (l, i)) initial
@@ -177,9 +174,9 @@ module Make_inter_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
     blocks: (int, vertex) Hashtbl.t;
     flow: G.t;
     functions: (int, string) Hashtbl.t;
-    mutable extremals: vertex list;
-    mutable extremalsR: vertex list;
-    mutable interflow: (vertex * vertex * vertex * vertex) list
+    mutable extremals: int list;
+    mutable extremalsR: int list;
+    mutable interflow: (int * int * int * int) list
   }
 
   let create () = {
@@ -193,20 +190,17 @@ module Make_inter_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
   let outflow g i =
     let n = get g i in
     Wrapper.outflow g.flow n
-  let is_extremal g i =
-    let n = get g i in
-    Wrapper.is_extremal g.extremals n
-  let is_extremalR g i =
-    let n = get g i in
-    Wrapper.is_extremal g.extremalsR n
+  let is_extremal g = Wrapper.is_extremal g.extremals
+  let is_extremalR g = Wrapper.is_extremal g.extremalsR
   let add t func_id v =
     let () = Hashtbl.add t.blocks v.N.id v in
-    Wrapper.add t.flow t.functions func_id v
+    Wrapper.add t.flow t.functions func_id v v.id
   let connect { flow=g; _ } ?(label = E.default) = Wrapper.connect g label
   let get_blocks { blocks=b; _ } = b
   let get_func_id { functions=p; _ } = Hashtbl.find p
   let extremal t l = t.extremals <- l::t.extremals
   let extremalR t l = t.extremalsR <- l::t.extremalsR
+  let labels { blocks; _ } = Hashtbl.fold (fun l _ -> Set.add l) blocks Set.empty
   (*let interflow t l = t.interflow <- l::t.interflow*)
   let inter_flow t = t.interflow
 
