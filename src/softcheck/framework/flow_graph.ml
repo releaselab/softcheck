@@ -41,14 +41,14 @@ struct
   end
 
   module Wrapper = struct
-    let inflow = G.pred
+    let inflow g n = G.pred g n |> List.map (fun n -> n.N.id)
 
-    let outflow = G.succ
+    let outflow g n = G.succ g n |> List.map (fun n -> n.N.id)
 
     let is_extremal exts l = List.mem l exts
 
-    let add g p func_id v =
-      let () = Hashtbl.replace p v func_id in
+    let add g p func_id v i =
+      let () = Hashtbl.replace p i func_id in
       G.add_vertex g v
 
     let connect g label l l' = G.add_edge_e g (G.E.create l label l')
@@ -93,24 +93,33 @@ module Make_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
   include Make_common(Sl)(N)(C)
 
   type t = {
-    mutable blocks: vertex Set.t;
+    blocks: (int, vertex) Hashtbl.t;
     flow: G.t;
-    functions: (vertex, string) Hashtbl.t;
+    functions: (int, string) Hashtbl.t;
     mutable extremals: vertex list;
     mutable extremalsR: vertex list
   }
 
   let create () = {
-    blocks = Set.empty; flow = G.create(); functions= Hashtbl.create 10;
+    blocks = Hashtbl.create 10; flow = G.create(); functions= Hashtbl.create 10;
     extremals= []; extremalsR = []
   }
-  let inflow { flow = g; _ } = Wrapper.inflow g
-  let outflow { flow = g; _ } = Wrapper.outflow g
-  let is_extremal t = Wrapper.is_extremal t.extremals
-  let is_extremalR t = Wrapper.is_extremal t.extremalsR
+  let get t = Hashtbl.find t.blocks
+  let inflow g i =
+    let n = get g i in
+    Wrapper.inflow g.flow n
+  let outflow g i =
+    let n = get g i in
+    Wrapper.outflow g.flow n
+  let is_extremal g i =
+    let n = get g i in
+    Wrapper.is_extremal g.extremals n
+  let is_extremalR g i =
+    let n = get g i in
+    Wrapper.is_extremal g.extremalsR n
   let add t func_id v =
-    let () = t.blocks <- Set.add v t.blocks in
-    Wrapper.add t.flow t.functions func_id v
+    let () = Hashtbl.add t.blocks v.N.id v in
+    Wrapper.add t.flow t.functions func_id v v.N.id
   let connect { flow = g; _ } ?(label = E.default) = Wrapper.connect g label
   let get_blocks { blocks = b; _ } = b
   let get_func_id { functions = p; _ } = Hashtbl.find p
@@ -165,24 +174,33 @@ module Make_inter_cfg(Sl : Softlang.S)(N : Node_sig.S with type expr = Sl.expr)
   include Make_common(Sl)(N)(C)
 
   type t = {
-    mutable blocks: vertex Set.t;
+    blocks: (int, vertex) Hashtbl.t;
     flow: G.t;
-    functions: (vertex, string) Hashtbl.t;
+    functions: (int, string) Hashtbl.t;
     mutable extremals: vertex list;
     mutable extremalsR: vertex list;
     mutable interflow: (vertex * vertex * vertex * vertex) list
   }
 
   let create () = {
-    blocks = Set.empty; flow = G.create(); functions = Hashtbl.create 10;
+    blocks = Hashtbl.create 10; flow = G.create(); functions = Hashtbl.create 10;
     extremals = []; extremalsR = []; interflow = []
   }
-  let inflow { flow=g; _ } = Wrapper.inflow g
-  let outflow { flow=g; _ } = Wrapper.outflow g
-  let is_extremal t = Wrapper.is_extremal t.extremals
-  let is_extremalR t = Wrapper.is_extremal t.extremalsR
+  let get t = Hashtbl.find t.blocks
+  let inflow g i =
+    let n = get g i in
+    Wrapper.inflow g.flow n
+  let outflow g i =
+    let n = get g i in
+    Wrapper.outflow g.flow n
+  let is_extremal g i =
+    let n = get g i in
+    Wrapper.is_extremal g.extremals n
+  let is_extremalR g i =
+    let n = get g i in
+    Wrapper.is_extremal g.extremalsR n
   let add t func_id v =
-    let () = t.blocks <- Set.add v t.blocks in
+    let () = Hashtbl.add t.blocks v.N.id v in
     Wrapper.add t.flow t.functions func_id v
   let connect { flow=g; _ } ?(label = E.default) = Wrapper.connect g label
   let get_blocks { blocks=b; _ } = b

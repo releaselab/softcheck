@@ -8,6 +8,7 @@ module Make_cfg : functor
      val funcs : program -> func list
      val global_decls : program -> N.stmt N.t list
    end) -> Sig.Flow_graph with type vertex = N.stmt N.t and type expr = N.expr
+                                                        and type program = C.program
 
 module Make_inter_cfg : functor
   (Sl : Softlang.S)

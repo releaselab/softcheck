@@ -1,6 +1,5 @@
 module Common(Cfg : Sig.Flow_graph) = struct
   type g_t = Cfg.t
-  type vertex = Cfg.vertex
 end
 
 module Forward(Cfg : Sig.Flow_graph) = struct
@@ -20,7 +19,7 @@ module Backward(Cfg : Sig.Flow_graph) = struct
 end
 
 module InterForward(Cfg : Sig.Flow_graph)
-    (M : sig val is_after_call : Cfg.vertex -> bool end) = struct
+    (M : sig val is_after_call : int -> bool end) = struct
   include Common(Cfg)
 
   let outdep      = Cfg.outflow
@@ -29,10 +28,18 @@ module InterForward(Cfg : Sig.Flow_graph)
 end
 
 module ContextSensitiveInterForward(Cfg : Sig.Flow_graph)
-    (M : sig val is_call_or_exit : Cfg.vertex -> bool end) = struct
+    (M : sig val is_call_or_exit : int -> bool end) = struct
   include Common(Cfg)
 
   let outdep g l  = if M.is_call_or_exit l then [] else Cfg.outflow g l
   let indep _ _   = assert false
   let is_extremal = Cfg.is_extremal
+end
+
+module type S = sig
+  type g_t
+
+  val outdep : g_t -> int -> int list
+  val indep : g_t -> int -> int list
+  val is_extremal : g_t -> int -> bool
 end

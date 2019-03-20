@@ -1,4 +1,5 @@
 open Batteries
+open Fix
 
 module Imperative_map(K : sig type key end) = struct
   type key = K.key
@@ -11,32 +12,47 @@ module Imperative_map(K : sig type key end) = struct
   let iter f ht  = Hashtbl.iter f ht
 end
 
-module Make_fix(L : Sig.Lattice)(Cfg : Sig.Flow_graph)
+module Make_fix(Cfg : Sig.Flow_graph)
+    (L : Sig.Lattice)
     (F : Sig.Transfer with type vertex = Cfg.vertex and type state = L.property)
-    (D : Sig.Dependencies with type g_t = Cfg.t and type vertex = Cfg.vertex)
+    (D : Dependencies.S with type g_t = Cfg.t)
 = struct
-  type variable = Circ of Cfg.vertex | Bullet of Cfg.vertex
-  module Fix = Fix.Make(Imperative_map(struct type key = variable end))(L)
+  type variable = Circ of int | Bullet of int
+
+  module Fix = Fix.ForOrderedType(struct
+      type t = int
+      let compare = compare
+    end)(L)
 
   let generate_equations graph var state =
     match var with
-    | Circ l -> D.indep graph l |> List.map (fun l' -> state(Bullet l'))
+    | Circ l -> D.indep graph l |> List.map (fun l' -> state (Bullet l'))
                 |> List.fold_left L.lub
                   (if D.is_extremal graph l then F.initial_state
                    else L.bottom)
     | Bullet l ->
         F.f (Cfg.get_func_id graph l) l (state (Circ l))
 
-  let solve graph = generate_equations graph |> Fix.lfp
+  let solve graph = Fix.lfp (generate_equations graph)
 end
 
-module Make_fix_inter(L : Sig.Lattice)(Cfg : Sig.Inter_flow_graph)
+module Make_fix_inter(N : Node_sig.S)
+    (Cfg : Sig.Inter_flow_graph with type vertex = N.stmt N.t
+                                 and type expr = N.expr)
+    (L : Sig.Lattice)
     (F : Sig.Inter_transfer with type vertex = Cfg.vertex
                              and type state = L.property)
-    (D : Sig.Dependencies with type g_t = Cfg.t and type vertex = Cfg.vertex)
+    (D : Dependencies.S with type g_t = Cfg.t)
 = struct
   type variable = Circ of Cfg.vertex | Bullet of Cfg.vertex
-  module Fix = Fix.Make(Imperative_map(struct type key = variable end))(L)
+
+  module Fix = Fix.ForHashedType(struct
+      type t = variable
+      let hash = Hashtbl.hash
+      let equal a b = match a, b with
+          Circ x, Circ y | Bullet x, Bullet y -> x.N.id = y.N.id
+        | _ -> false
+    end)(L)
 
   let generate_equations graph var state =
     match var with

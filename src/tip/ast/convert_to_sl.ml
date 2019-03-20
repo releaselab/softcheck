@@ -49,3 +49,6 @@ let funcs =
       create (Decl v)) f.Ast.func_vars) in
     f.Ast.func_id, f.Ast.func_vars,
     create (Stmt (Cfg_seq (decls, stmt_to_node f.Ast.func_body))))
+
+let convert_program p =
+  global_decls p, funcs p

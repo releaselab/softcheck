@@ -37,16 +37,17 @@ module type Flow_graph = sig
   type t
 
   val create : unit -> t
-  val inflow : t -> vertex -> vertex list
-  val outflow : t -> vertex -> vertex list
-  val is_extremal : t -> vertex -> bool
-  val is_extremalR : t -> vertex -> bool
+  val inflow : t -> int -> int list
+  val outflow : t -> int -> int list
+  val is_extremal : t -> int -> bool
+  val is_extremalR : t -> int -> bool
   val add : t -> string -> vertex -> unit
+  val get : t -> int -> vertex
   val connect : t -> ?label:edge_label -> vertex -> vertex -> unit
-  val get_blocks : t -> vertex Set.t
-  val get_func_id : t -> vertex -> string
-  val extremal : t -> vertex -> unit
-  val extremalR : t -> vertex -> unit
+  val get_blocks : t -> (int, vertex) Hashtbl.t
+  val get_func_id : t -> int -> string
+  val extremal : t -> int -> unit
+  val extremalR : t -> int -> unit
   val dot_output : t -> string -> unit
   val display_with_gv : t -> unit
   val show : t -> unit
@@ -87,15 +88,6 @@ end
 module type Element = sig
   type t
   val to_string: t -> string
-end
-
-module type Dependencies = sig
-  type g_t
-  type vertex
-
-  val outdep : g_t -> vertex -> vertex list
-  val indep : g_t -> vertex -> vertex list
-  val is_extremal : g_t -> vertex -> bool
 end
 
 module type Call_context = sig

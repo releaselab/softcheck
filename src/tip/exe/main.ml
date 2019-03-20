@@ -6,7 +6,7 @@ module Parser = Softcheck.Parsing_utils.Make(Ast)(Parser)(Lexer)
 
 let show_cfg = Cfg.show % Cfg.generate_from_program
 
-let show_icfg = Inter_cfg.show % Inter_cfg.generate_from_program
+(* let show_icfg = Inter_cfg.show % Inter_cfg.generate_from_program *)
 
 let ae p =
   let open Printf in
@@ -90,10 +90,10 @@ let ta p =
     in aux_rec e in
   List.iter aux sinks
 
-let run cfg icfg livevars vbusy reaching available sign taint filename =
+let run cfg _ livevars vbusy reaching available sign taint filename =
   let p = Parser.compile filename in
   if cfg then show_cfg p;
-  if icfg then show_icfg p;
+  (* if icfg then show_icfg p; *)
   if livevars then lv p;
   if vbusy then vb p;
   if reaching then rd p;
