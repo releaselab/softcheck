@@ -5,6 +5,8 @@ module Make(E : sig type t end) = struct
 
   type ident = string
 
+  type decl = ident
+
   type stmt =
       Cfg_var_decl of ident t
     | Cfg_assign of expr t * expr t
@@ -17,7 +19,7 @@ module Make(E : sig type t end) = struct
 
   and _ node_data =
       Stmt : stmt -> stmt node_data
-    | Decl : ident -> ident node_data
+    | Decl : decl -> decl node_data
     | Expr : expr -> expr node_data
 
   and 'a t = {
@@ -50,8 +52,10 @@ module type S = sig
 
   type ident = string
 
+  type decl = ident
+
   type stmt =
-      Cfg_var_decl of ident t
+      Cfg_var_decl of decl t
     | Cfg_assign of expr t * expr t
     | Cfg_if of expr t * stmt t
     | Cfg_if_else of expr t * stmt t * stmt t
@@ -62,7 +66,7 @@ module type S = sig
 
   and _ node_data =
       Stmt : stmt -> stmt node_data
-    | Decl : ident -> ident node_data
+    | Decl : decl -> decl node_data
     | Expr : expr -> expr node_data
 
   and 'a t = {

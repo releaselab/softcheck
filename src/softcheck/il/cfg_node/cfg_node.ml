@@ -8,8 +8,10 @@ module Make(E : sig
 
   type ident = string
 
+  type decl = ident
+
   type stmt =
-      Cfg_var_decl of ident t
+      Cfg_var_decl of decl t
     | Cfg_assign of expr t * expr t
     | Cfg_guard of expr t
     | Cfg_jump
@@ -17,7 +19,7 @@ module Make(E : sig
 
   and _ node_data =
       Stmt : stmt -> stmt node_data
-    | Decl : ident -> ident node_data
+    | Decl : decl -> decl node_data
     | Expr : expr -> expr node_data
 
   and 'a t = {
@@ -43,7 +45,7 @@ module Make(E : sig
   let rec stmt_to_string =
     let open Printf in
     function
-      Cfg_var_decl v -> sprintf "decl %s" (get_node_data v)
+      Cfg_var_decl v -> sprintf "var %s" (get_node_data v)
     | Cfg_assign (lv, rv) -> sprintf "%s = %s" (to_string lv)
                                (to_string rv)
     | Cfg_guard e -> sprintf "test %s" (to_string e)
@@ -65,8 +67,10 @@ module type S = sig
 
   type ident = string
 
+  type decl = ident
+
   type stmt =
-      Cfg_var_decl of ident t
+      Cfg_var_decl of decl t
     | Cfg_assign of expr t * expr t
     | Cfg_guard of expr t
     | Cfg_jump
@@ -74,7 +78,7 @@ module type S = sig
 
   and _ node_data =
       Stmt : stmt -> stmt node_data
-    | Decl : ident -> ident node_data
+    | Decl : decl -> decl node_data
     | Expr : expr -> expr node_data
 
   and 'a t = {

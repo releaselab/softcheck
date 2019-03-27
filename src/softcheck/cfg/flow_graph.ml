@@ -137,11 +137,21 @@ module Make_cfg(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     let () =
       Hashtbl.iter (fun id blocks -> Set.iter (add graph id) blocks) pBlocks in
     let add_edge (i, j) = connect graph i j in
-    let rec aux = function
+    let rec aux : Sl.ident Sl.t list -> N.stmt N.t option = function
         h_1 :: h_2 :: t ->
-          let () = add_edge (h_1, h_2) in
+          let h_1_data = Sl.get_node_data h_1 in
+          let n_1 = N.create ~loc:h_1.Sl.loc (Decl h_1_data) in
+          let n_1' = N.create ~loc:h_1.Sl.loc (Stmt (Cfg_var_decl n_1)) in
+          let h_2_data = Sl.get_node_data h_2 in
+          let n_2 = N.create ~loc:h_2.Sl.loc (Decl h_2_data) in
+          let n_2' = N.create ~loc:h_2.Sl.loc (Stmt (Cfg_var_decl n_2)) in
+          let () = add_edge (n_1', n_2') in
           aux (h_2 :: t)
-      | [h] -> Some h
+      | [h] ->
+          let h_data = Sl.get_node_data h in
+          let n = N.create ~loc:h.Sl.loc (Decl h_data) in
+          let n' = N.create ~loc:h.Sl.loc (Stmt (Cfg_var_decl n)) in
+          Some n'
       | [] -> None in
     let last_decl = aux global_decls in
     let () = List.iter (fun (f, _, b) ->
