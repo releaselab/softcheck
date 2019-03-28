@@ -13,8 +13,8 @@ deps:
 	dune external-lib-deps --missing @runtest
 
 # Launch utop such that it finds our library.
-utop: build
-	dune utop src/lib
+utop:
+	dune utop src
 
 # Build and run tests
 test: build

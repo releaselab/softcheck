@@ -134,10 +134,8 @@ module Make_cfg(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     let graph = create () in
     let pBlocks = Hashtbl.create 10 in
     let global_decls, funcs = C.convert_program_to_sl p in
-    let () =
-      Hashtbl.iter (fun id blocks -> Set.iter (add graph id) blocks) pBlocks in
     let add_edge (i, j) = connect graph i j in
-    let rec aux : Sl.ident Sl.t list -> N.stmt N.t option = function
+    let rec aux = function
         h_1 :: h_2 :: t ->
           let h_1_data = Sl.get_node_data h_1 in
           let n_1 = N.create ~loc:h_1.Sl.loc (Decl h_1_data) in
@@ -156,6 +154,7 @@ module Make_cfg(Sl : Softlang.S)(N : Cfg_node.S with type expr = Sl.expr)
     let last_decl = aux global_decls in
     let () = List.iter (fun (f, _, b) ->
       let { F.correspondence = ht; initial; nodes; flow; _ } = F.flow b in
+      let () = Set.iter (fun b -> add graph f b) nodes in
       let init = Hashtbl.find ht (F.init b) in
       let () = extremal graph init.id in
       let finals = Set.map (Hashtbl.find ht) (F.final b) in
