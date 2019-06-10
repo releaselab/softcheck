@@ -2,7 +2,7 @@
 (copy_files# cfg/*)
 (copy_files# il/*)
 (copy_files# il/cfg_node/*)
-(copy_files# il/softlang/*)
+(copy_files# il/scil/*)
 (copy_files# framework/*)
 (copy_files# cubic/*)
 (copy_files# lattices/*)

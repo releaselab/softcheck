@@ -21,5 +21,6 @@ depends: [
   "menhir" {build}
   "cmdliner"
   "bitv"
+  "zarith"
   "kaputt" {with-test}
 ]
