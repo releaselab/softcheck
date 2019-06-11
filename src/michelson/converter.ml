@@ -130,11 +130,18 @@ and convert env =
   | I_iter _ ->
       (S_todo, env)
   | I_mem ->
-      (S_todo, env)
+      let elt, env' = pop env in
+      let set, env' = pop env' in
+      (S_skip, push (E_mem (elt, set)) env')
   | I_get ->
-      (S_todo, env)
+      let key, env' = pop env in
+      let map, env' = pop env' in
+      (S_skip, push (E_get (key, map)) env')
   | I_update ->
-      (S_todo, env)
+      let key, env' = pop env in
+      let value, env' = pop env' in
+      let map, env' = pop env' in
+      (S_skip, push (E_update (key, value, map)) env')
   | I_if _ ->
       (S_todo, env)
   | I_loop _ ->
@@ -217,7 +224,9 @@ and convert env =
       let x, env' = pop env in
       (S_skip, push (E_unop (Not, x)) env')
   | I_compare ->
-      (S_todo, env)
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Compare, x_1, x_2)) env')
   | I_eq ->
       let x_1, env' = pop env in
       let x_2, env' = pop env' in

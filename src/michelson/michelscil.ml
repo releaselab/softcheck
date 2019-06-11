@@ -16,6 +16,7 @@ type binop =
   | Gt
   | Leq
   | Geq
+  | Compare
 
 type comparable_type =
   | T_int
@@ -69,6 +70,9 @@ type expr =
   | E_set of expr list
   | E_map of (expr * expr) list
   | E_stmt of stmt
+  | E_mem of expr * expr
+  | E_get of expr * expr
+  | E_update of expr * expr * expr
   | E_cast of expr
   | E_concat of expr * expr
   | E_slice of expr * expr * expr
