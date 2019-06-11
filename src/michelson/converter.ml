@@ -1,10 +1,18 @@
-type 'a env = 'a list
+type 'a env = ('a * string) list
 
 let empty_env = []
 
-let push = List.cons
+let var_counter = ref (-1)
 
-let pop = function x :: t -> (x, t) | [] -> assert false
+let next_var () =
+  let () = var_counter := !var_counter + 1 in
+  Printf.sprintf "v%d" !var_counter
+
+let push ?name x =
+  let v = match name with None -> next_var () | Some s -> s in
+  List.cons (x, v)
+
+let pop env = (List.hd env, List.tl env)
 
 let drop = List.tl
 
@@ -69,7 +77,7 @@ and convert env =
   | I_drop ->
       (S_skip, drop env)
   | I_dup ->
-      let x = peek env in
+      let x, _ = peek env in
       (S_skip, push x env)
   | I_swap ->
       let env' = swap env in
@@ -77,7 +85,7 @@ and convert env =
   | I_push (t, x) ->
       (S_skip, push (data_to_expr x) env)
   | I_some ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_some x) env')
   | I_none t ->
       (S_skip, push E_none env)
@@ -91,20 +99,20 @@ and convert env =
       (S_if (e, s_t, s_f), env') *)
       (S_todo, env)
   | I_pair ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_pair (x_1, x_2)) env')
   | I_car ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unop (Fst, x)) env')
   | I_cdr ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unop (Snd, x)) env')
   | I_left t ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_left x) env')
   | I_right _ ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_right x) env')
   | I_if_left _ ->
       (S_todo, env)
@@ -113,8 +121,8 @@ and convert env =
   | I_nil t ->
       (S_skip, push (E_list []) env)
   | I_cons ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_cons (x_1, x_2)) env')
   | I_if_cons _ ->
       (S_todo, env)
@@ -130,17 +138,17 @@ and convert env =
   | I_iter _ ->
       (S_todo, env)
   | I_mem ->
-      let elt, env' = pop env in
-      let set, env' = pop env' in
+      let (elt, _), env' = pop env in
+      let (set, _), env' = pop env' in
       (S_skip, push (E_mem (elt, set)) env')
   | I_get ->
-      let key, env' = pop env in
-      let map, env' = pop env' in
+      let (key, _), env' = pop env in
+      let (map, _), env' = pop env' in
       (S_skip, push (E_get (key, map)) env')
   | I_update ->
-      let key, env' = pop env in
-      let value, env' = pop env' in
-      let map, env' = pop env' in
+      let (key, _), env' = pop env in
+      let (value, _), env' = pop env' in
+      let (map, _), env' = pop env' in
       (S_skip, push (E_update (key, value, map)) env')
   | I_if _ ->
       (S_todo, env)
@@ -154,7 +162,7 @@ and convert env =
   | I_exec ->
       (S_todo, env)
   | I_dip i ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       let s, env' = convert env' i in
       (s, push x env')
   | I_failwith _ ->
@@ -164,120 +172,120 @@ and convert env =
   | I_rename ->
       (S_todo, env)
   | I_concat ->
-      let s, env' = pop env in
-      let t, env' = pop env' in
+      let (s, _), env' = pop env in
+      let (t, _), env' = pop env' in
       (S_skip, push (E_concat (s, t)) env')
   | I_slice ->
-      let offset, env' = pop env in
-      let length, env' = pop env' in
-      let x, env' = pop env' in
+      let (offset, _), env' = pop env in
+      let (length, _), env' = pop env' in
+      let (x, _), env' = pop env' in
       (S_skip, push (E_slice (offset, length, x)) env')
   | I_pack ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_pack x) env')
   | I_unpack ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unpack x) env')
   | I_add ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Add, x_1, x_2)) env')
   | I_sub ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Sub, x_1, x_2)) env')
   | I_mul ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Mul, x_1, x_2)) env')
   | I_ediv ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Div, x_1, x_2)) env')
   | I_abs ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unop (Abs, x)) env')
   | I_neg ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unop (Neg, x)) env')
   | I_lsl ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (ShiftL, x_1, x_2)) env')
   | I_lsr ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (ShiftR, x_1, x_2)) env')
   | I_or ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Or, x_1, x_2)) env')
   | I_and ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (And, x_1, x_2)) env')
   | I_xor ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Xor, x_1, x_2)) env')
   | I_not ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_unop (Not, x)) env')
   | I_compare ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Compare, x_1, x_2)) env')
   | I_eq ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Eq, x_1, x_2)) env')
   | I_neq ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Neq, x_1, x_2)) env')
   | I_lt ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Lt, x_1, x_2)) env')
   | I_gt ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Gt, x_1, x_2)) env')
   | I_le ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Leq, x_1, x_2)) env')
   | I_ge ->
-      let x_1, env' = pop env in
-      let x_2, env' = pop env' in
+      let (x_1, _), env' = pop env in
+      let (x_2, _), env' = pop env' in
       (S_skip, push (E_binop (Geq, x_1, x_2)) env')
   | I_self ->
       (S_skip, push E_self env)
   | I_contract _ ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_contract_of_address x) env')
   | I_transfer_tokens ->
-      (* let x, env' = pop env in
-      let amount, env' = pop env' in
-      let contract, env' = pop env' in
+      (* let (x,_), env' = pop env in
+      let (amount,_), env' = pop env' in
+      let (contract,_), env' = pop env' in
       (S_skip, push (E_set_delegate x) env') *)
       (S_todo, env)
   | I_set_delegate ->
-      (* let x, env' = pop env in
+      (* let (x,_), env' = pop env in
       (S_skip, push (E_set_delegate x) env') *)
       (S_todo, env)
   | I_create_account ->
-      let manager, env' = pop env in
-      let delegate, env' = pop env' in
-      let delegatable, env' = pop env' in
-      let amount, env' = pop env' in
+      let (manager, _), env' = pop env in
+      let (delegate, _), env' = pop env' in
+      let (delegatable, _), env' = pop env' in
+      let (amount, _), env' = pop env' in
       ( S_skip
       , push (E_create_account (manager, delegate, delegatable, amount)) env'
       )
   | I_create_contract _ ->
       (S_todo, env)
   | I_implicit_account ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_implicit_account x) env')
   | I_now ->
       (S_skip, push E_now env)
@@ -286,21 +294,21 @@ and convert env =
   | I_balance ->
       (S_skip, push E_balance env)
   | I_check_signature ->
-      let key, env' = pop env in
-      let signature, env' = pop env' in
-      let bytes, env' = pop env' in
+      let (key, _), env' = pop env in
+      let (signature, _), env' = pop env' in
+      let (bytes, _), env' = pop env' in
       (S_skip, push (E_check_signature (key, signature, bytes)) env')
   | I_blake2b ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_blake2b x) env')
   | I_sha256 ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_sha256 x) env')
   | I_sha512 ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_sha512 x) env')
   | I_hash_key ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_hash_key x) env')
   | I_steps_to_quota ->
       (S_skip, push E_steps_to_quota env)
@@ -309,5 +317,5 @@ and convert env =
   | I_sender ->
       (S_skip, push E_sender env)
   | I_address ->
-      let x, env' = pop env in
+      let (x, _), env' = pop env in
       (S_skip, push (E_address_of_contact x) env')
