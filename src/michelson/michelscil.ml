@@ -69,6 +69,28 @@ type expr =
   | E_set of expr list
   | E_map of (expr * expr) list
   | E_stmt of stmt
+  | E_cast of expr
+  | E_concat of expr * expr
+  | E_slice of expr * expr * expr
+  | E_pack of expr
+  | E_unpack of expr
+  | E_self
+  | E_contract_of_address of expr
+  | E_set_delegate of expr
+  | E_create_account of expr * expr * expr * expr
+  | E_implicit_account of expr
+  | E_now
+  | E_amount
+  | E_balance
+  | E_check_signature of expr * expr * expr
+  | E_blake2b of expr
+  | E_sha256 of expr
+  | E_sha512 of expr
+  | E_hash_key of expr
+  | E_steps_to_quota
+  | E_source
+  | E_sender
+  | E_address_of_contact of expr
 
 and stmt =
   | S_seq of stmt * stmt

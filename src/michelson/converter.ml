@@ -157,13 +157,20 @@ and convert env =
   | I_rename ->
       (S_todo, env)
   | I_concat ->
-      (S_todo, env)
+      let s, env' = pop env in
+      let t, env' = pop env' in
+      (S_skip, push (E_concat (s, t)) env')
   | I_slice ->
-      (S_todo, env)
+      let offset, env' = pop env in
+      let length, env' = pop env' in
+      let x, env' = pop env' in
+      (S_skip, push (E_slice (offset, length, x)) env')
   | I_pack ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_pack x) env')
   | I_unpack ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_unpack x) env')
   | I_add ->
       let x_1, env' = pop env in
       let x_2, env' = pop env' in
@@ -236,40 +243,62 @@ and convert env =
       let x_2, env' = pop env' in
       (S_skip, push (E_binop (Geq, x_1, x_2)) env')
   | I_self ->
-      (S_todo, env)
+      (S_skip, push E_self env)
   | I_contract _ ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_contract_of_address x) env')
   | I_transfer_tokens ->
+      (* let x, env' = pop env in
+      let amount, env' = pop env' in
+      let contract, env' = pop env' in
+      (S_skip, push (E_set_delegate x) env') *)
       (S_todo, env)
   | I_set_delegate ->
+      (* let x, env' = pop env in
+      (S_skip, push (E_set_delegate x) env') *)
       (S_todo, env)
   | I_create_account ->
-      (S_todo, env)
+      let manager, env' = pop env in
+      let delegate, env' = pop env' in
+      let delegatable, env' = pop env' in
+      let amount, env' = pop env' in
+      ( S_skip
+      , push (E_create_account (manager, delegate, delegatable, amount)) env'
+      )
   | I_create_contract _ ->
       (S_todo, env)
   | I_implicit_account ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_implicit_account x) env')
   | I_now ->
-      (S_todo, env)
+      (S_skip, push E_now env)
   | I_amount ->
-      (S_todo, env)
+      (S_skip, push E_amount env)
   | I_balance ->
-      (S_todo, env)
+      (S_skip, push E_balance env)
   | I_check_signature ->
-      (S_todo, env)
+      let key, env' = pop env in
+      let signature, env' = pop env' in
+      let bytes, env' = pop env' in
+      (S_skip, push (E_check_signature (key, signature, bytes)) env')
   | I_blake2b ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_blake2b x) env')
   | I_sha256 ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_sha256 x) env')
   | I_sha512 ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_sha512 x) env')
   | I_hash_key ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_hash_key x) env')
   | I_steps_to_quota ->
-      (S_todo, env)
+      (S_skip, push E_steps_to_quota env)
   | I_source ->
-      (S_todo, env)
+      (S_skip, push E_source env)
   | I_sender ->
-      (S_todo, env)
+      (S_skip, push E_sender env)
   | I_address ->
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_address_of_contact x) env')
