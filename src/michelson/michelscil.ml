@@ -95,6 +95,14 @@ type expr =
   | E_source
   | E_sender
   | E_address_of_contact of expr
+  | E_is_none of expr
+  | E_lift_option of expr
+  | E_is_left of expr
+  | E_lift_or of expr
+  | E_is_list_empty of expr
+  | E_list_hd of expr
+  | E_list_tl of expr
+  | E_size of expr
 
 and stmt =
   | S_seq of stmt * stmt
@@ -102,6 +110,7 @@ and stmt =
   | S_assign of string * expr
   | S_skip
   | S_if of expr * stmt * stmt
+  | S_while of expr * stmt
   | S_if_cons of stmt * stmt
   | S_size
   | S_empty_set of comparable_type
