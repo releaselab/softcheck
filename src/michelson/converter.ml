@@ -1,72 +1,16 @@
-module StringMap = Map.Make (struct
-  type t = string
+type 'a env = 'a list
 
-  let compare = compare
-end)
+let empty_env = []
 
-module IntMap = Map.Make (struct
-  type t = int
+let push = List.cons
 
-  let compare = compare
-end)
+let pop = function x :: t -> (x, t) | [] -> assert false
 
-type 'a env =
-  {var_to_stack_pos: int StringMap.t; stack_pos_to_var: string IntMap.t}
+let drop = List.tl
 
-let empty_env =
-  {var_to_stack_pos= StringMap.empty; stack_pos_to_var= IntMap.empty}
+let peek = List.hd
 
-let stack_pos_from_var env x = StringMap.find x env.var_to_stack_pos
-
-let add_var = StringMap.add
-
-let remove_var = StringMap.remove
-
-let var_from_stack_pos x env = IntMap.find x env.stack_pos_to_var
-
-let add_stack_pos = IntMap.add
-
-let remove_stack_pos = IntMap.remove
-
-let next_free_var map =
-  let rec aux i =
-    let v = "v" ^ string_of_int i in
-    if StringMap.mem v map then v else aux (i + 1)
-  in
-  aux 0
-
-let push env =
-  let var_to_stack_pos =
-    StringMap.map (fun pos -> pos + 1) env.var_to_stack_pos
-  in
-  let stack_pos_to_var =
-    StringMap.fold
-      (fun var pos -> add_stack_pos pos var)
-      var_to_stack_pos IntMap.empty
-  in
-  let v = next_free_var var_to_stack_pos in
-  ( { var_to_stack_pos= add_var v 0 var_to_stack_pos
-    ; stack_pos_to_var= add_stack_pos 0 v stack_pos_to_var }
-  , v )
-
-let pop env =
-  let v = var_from_stack_pos 0 env in
-  let stack_pos_to_var = remove_stack_pos 0 env.stack_pos_to_var in
-  let var_to_stack_pos = remove_var v env.var_to_stack_pos in
-  ({stack_pos_to_var; var_to_stack_pos}, v)
-
-let drop env = fst (pop env)
-
-let peek env = var_from_stack_pos 0 env
-
-let swap env =
-  let v_0 = var_from_stack_pos 0 env in
-  let v_1 = var_from_stack_pos 1 env in
-  let var_to_stack_pos' = add_var v_0 1 env.var_to_stack_pos in
-  let var_to_stack_pos = add_var v_1 0 var_to_stack_pos' in
-  let stack_pos_to_var' = add_stack_pos 0 v_1 env.stack_pos_to_var in
-  let stack_pos_to_var = add_stack_pos 1 v_0 stack_pos_to_var' in
-  {var_to_stack_pos; stack_pos_to_var}
+let swap = function h :: h' :: t -> h' :: h :: t | _ -> assert false
 
 let rec data_to_expr =
   let open Ast in
@@ -117,86 +61,69 @@ let rec data_to_expr =
 and convert env =
   let open Ast in
   let open Michelscil in
-  let push_like_op env x =
-    let env', v = push env in
-    let s = S_seq (S_var_decl v, S_assign (v, x)) in
-    (s, env')
-  in
   function
   | I_seq (i_1, i_2) ->
       let s_1, env_1 = convert env i_1 in
       let s_2, env_2 = convert env_1 i_2 in
       (S_seq (s_1, s_2), env_2)
   | I_drop ->
-      let env' = drop env in
-      (S_skip, env')
+      (S_skip, drop env)
   | I_dup ->
-      let v_1 = peek env in
-      push_like_op env (E_ident v_1)
+      let x = peek env in
+      (S_skip, push x env)
   | I_swap ->
       let env' = swap env in
       (S_skip, env')
   | I_push (t, x) ->
-      push_like_op env (data_to_expr x)
+      (S_skip, push (data_to_expr x) env)
   | I_some ->
-      let v = peek env in
-      let x = E_some (E_ident v) in
-      (S_assign (v, x), env)
+      let x, env' = pop env in
+      (S_skip, push (E_some x) env')
   | I_none t ->
-      push_like_op env E_none
+      (S_skip, push E_none env)
   | I_unit ->
-      push_like_op env E_unit
+      (S_skip, push E_unit env)
   | I_if_none (i_t, i_f) ->
       (* let env', (v, x) = pop env in
-      let e = E_binop (Eq, E_ident v, E_data D_none) in
+      let e = E_binop (Eq, x, E_data D_none) in
       let s_t, _ = convert env' i_t in
       let s_f, _ = convert env' i_f in
       (S_if (e, s_t, s_f), env') *)
       (S_todo, env)
   | I_pair ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_pair (E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_pair (x_1, x_2)) env')
   | I_car ->
-      (* let env', (_, x) = pop env in
-      (match x with
-      | D_pair (x', _) ->
-          push_like_op env' x'
-      | _ ->
-          assert false) *)
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_unop (Fst, x)) env')
   | I_cdr ->
-      (* let env', (_, x) = pop env in
-      (match x with
-      | D_pair (_, x') ->
-          push_like_op env' x'
-      | _ ->
-          assert false) *)
-      (S_todo, env)
+      let x, env' = pop env in
+      (S_skip, push (E_unop (Snd, x)) env')
   | I_left t ->
-      let env', v = pop env in
-      push_like_op env' (E_left (E_ident v))
+      let x, env' = pop env in
+      (S_skip, push (E_left x) env')
   | I_right _ ->
-      let env', v = pop env in
-      push_like_op env' (E_right (E_ident v))
+      let x, env' = pop env in
+      (S_skip, push (E_right x) env')
   | I_if_left _ ->
       (S_todo, env)
   | I_if_right _ ->
       (S_todo, env)
   | I_nil t ->
-      push_like_op env (E_list [])
+      (S_skip, push (E_list []) env)
   | I_cons ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_cons (E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_cons (x_1, x_2)) env')
   | I_if_cons _ ->
       (S_todo, env)
   | I_size ->
       (S_todo, env)
   | I_empty_set _ ->
-      push_like_op env (E_set [])
+      (S_skip, push (E_set []) env)
   | I_empty_map _ ->
-      push_like_op env (E_map [])
+      (S_skip, push (E_map []) env)
   | I_map i ->
       let s = convert empty_env i in
       (S_todo, env)
@@ -214,12 +141,15 @@ and convert env =
       (S_todo, env)
   | I_loop_left _ ->
       (S_todo, env)
-  | I_lambda _ ->
-      (S_todo, env)
+  | I_lambda (t_1, t_2, i) ->
+      let s, _ = convert empty_env i in
+      (S_skip, push (E_stmt s) env)
   | I_exec ->
       (S_todo, env)
-  | I_dip _ ->
-      (S_todo, env)
+  | I_dip i ->
+      let x, env' = pop env in
+      let s, env' = convert env' i in
+      (s, push x env')
   | I_failwith _ ->
       (S_todo, env)
   | I_cast ->
@@ -235,76 +165,76 @@ and convert env =
   | I_unpack ->
       (S_todo, env)
   | I_add ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Add, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Add, x_1, x_2)) env')
   | I_sub ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Sub, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Sub, x_1, x_2)) env')
   | I_mul ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Mul, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Mul, x_1, x_2)) env')
   | I_ediv ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Div, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Div, x_1, x_2)) env')
   | I_abs ->
-      let env', v = pop env in
-      push_like_op env' (E_unop (Abs, E_ident v))
+      let x, env' = pop env in
+      (S_skip, push (E_unop (Abs, x)) env')
   | I_neg ->
-      let env', v = pop env in
-      push_like_op env' (E_unop (Neg, E_ident v))
+      let x, env' = pop env in
+      (S_skip, push (E_unop (Neg, x)) env')
   | I_lsl ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (ShiftL, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (ShiftL, x_1, x_2)) env')
   | I_lsr ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (ShiftR, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (ShiftR, x_1, x_2)) env')
   | I_or ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Or, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Or, x_1, x_2)) env')
   | I_and ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (And, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (And, x_1, x_2)) env')
   | I_xor ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Xor, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Xor, x_1, x_2)) env')
   | I_not ->
-      let env', v = pop env in
-      push_like_op env' (E_unop (Not, E_ident v))
+      let x, env' = pop env in
+      (S_skip, push (E_unop (Not, x)) env')
   | I_compare ->
       (S_todo, env)
   | I_eq ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Eq, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Eq, x_1, x_2)) env')
   | I_neq ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Neq, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Neq, x_1, x_2)) env')
   | I_lt ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Lt, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Lt, x_1, x_2)) env')
   | I_gt ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Gt, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Gt, x_1, x_2)) env')
   | I_le ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Leq, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Leq, x_1, x_2)) env')
   | I_ge ->
-      let env', v_1 = pop env in
-      let env', v_2 = pop env' in
-      push_like_op env' (E_binop (Geq, E_ident v_1, E_ident v_2))
+      let x_1, env' = pop env in
+      let x_2, env' = pop env' in
+      (S_skip, push (E_binop (Geq, x_1, x_2)) env')
   | I_self ->
       (S_todo, env)
   | I_contract _ ->
