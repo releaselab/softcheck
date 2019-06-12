@@ -210,8 +210,11 @@ and convert env =
   | I_loop_left i ->
       let x, env' = pop env in
       let c = E_is_left x in
-      let s, env_t = convert env' i in
-      let env_f = push (E_lift_or x) env' in
+      let e = E_lift_or x in
+      let s, env' = convert (push e env') i in
+      let x', env' = pop env' in
+      let e' = E_lift_or x' in
+      let env' = push e' env' in
       let env', s' = join_envs_while s env' in
       (S_while (c, s'), env')
   | I_lambda (t_1, t_2, i) ->
