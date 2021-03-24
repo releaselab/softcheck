@@ -1,5 +1,0 @@
-(executable
-    (name main)
-    (public_name cao-softcheck)
-    (package softcheck)
-    (libraries softcheck batteries cmdliner))

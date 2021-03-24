@@ -1,0 +1,7 @@
+(library
+ (name scil)
+ (public_name softcheck.scil)
+ (libraries utils)
+ (preprocess
+  (pps ppx_deriving.ord ppx_deriving.eq ppx_string))
+ (modules_without_implementation sig))

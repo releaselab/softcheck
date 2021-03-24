@@ -1,0 +1,5 @@
+(library
+ (name lattice)
+ (public_name softcheck.lattice)
+ (libraries fix utils)
+ (modules_without_implementation sig))
