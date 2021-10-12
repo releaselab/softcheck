@@ -1,41 +1,38 @@
+open Base
 open Scil
 
-module Make (N : Cfg_node.S) = struct
+module Make (E : Expr.S) (N : Cfg_node.S with type expr = E.t) = struct
   open N
 
-  let free_variables free_variables blocks =
+  let free_variables free_variables_expr =
     let open N in
-    let aux n acc =
-      match n.Stmt.stmt_s with
-      | Stmt.Cfg_assign (_, e) | Cfg_guard e ->
-        Decl.Set.union acc (free_variables e)
+    let aux acc n =
+      match n.stmt_s with
+      | Cfg_assign (_, e) | Cfg_guard e -> Set.union acc (free_variables_expr e)
       | Cfg_call (f, args) ->
-        let f_fr = free_variables f in
-        List.fold_left
-          (fun acc x -> Decl.Set.union acc (free_variables x))
-          (Decl.Set.union acc f_fr) args
-      | Cfg_jump | Cfg_var_decl _ -> Decl.Set.empty
+        let f_fr = free_variables_expr f in
+        List.fold_left args
+          ~f:(fun acc x -> Set.union acc (free_variables_expr x))
+          ~init:(Set.union acc f_fr)
+      | Cfg_jump | Cfg_var_decl _ -> Set.empty (module String)
     in
-    Stmt.Set.fold aux blocks Decl.Set.empty
+    aux (Set.empty (module String))
 
-  let find_assignments blocks x =
+  let is_assignment ~var b =
     let open N in
-    let aux b acc =
-      match b.Stmt.stmt_s with
-      | Cfg_assign (lv, _) when Expr.equal lv x -> Stmt.Set.add b acc
-      | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
-        acc
-    in
-    Stmt.Set.fold aux blocks Stmt.Set.empty
+    match b.stmt_s with
+    | Cfg_assign (lv, _) when E.equal lv var -> true
+    | Cfg_assign _ | Cfg_call _ | Cfg_guard _ | Cfg_jump | Cfg_var_decl _ ->
+      false
 
-  let aexp get_non_trivial_subexpr n =
-    match n.Stmt.stmt_s with
-    | Cfg_assign (_, rv) -> get_non_trivial_subexpr rv
-    | Cfg_guard e -> get_non_trivial_subexpr e
+  let aexp ~get_non_trivial_subexpr:get_non_trivial_sub_expr n =
+    match n.stmt_s with
+    | Cfg_assign (_, rv) -> get_non_trivial_sub_expr rv
+    | Cfg_guard e -> get_non_trivial_sub_expr e
     | Cfg_call (f, args) ->
-      let f' = get_non_trivial_subexpr f in
-      List.fold_left
-        (fun acc e -> Expr.Set.union acc (get_non_trivial_subexpr e))
-        f' args
-    | Cfg_jump | Cfg_var_decl _ -> Expr.Set.empty
+      let f' = get_non_trivial_sub_expr f in
+      List.fold_left args
+        ~f:(fun acc e -> Set.union acc (get_non_trivial_sub_expr e))
+        ~init:f'
+    | Cfg_jump | Cfg_var_decl _ -> Set.empty (module E)
 end

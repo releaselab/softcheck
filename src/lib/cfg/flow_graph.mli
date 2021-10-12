@@ -1,27 +1,87 @@
-module Make_cfg : functor
-  (Sl : Scil.Softlang.S)
-  (N : Cfg_node.S with type Expr.t = Sl.Expr.t)
-  (F : Sig.Flow
-         with type Ast_block.t = Sl.Stmt.t
-          and type Cfg_block.t = N.Stmt.t)
-  (C : sig
-     type program
+open Base
+open Scil
 
-     val convert_program_to_sl : program -> Sl.program
+module type FlowGraph = sig
+  type block
+
+  module Vertex = Label
+
+  type edge_label = Normal | If_true | If_false
+
+  type program
+
+  type t
+
+  val create : unit -> t
+
+  val inflow : t -> Vertex.t -> Vertex.t list
+
+  val outflow : t -> Vertex.t -> Vertex.t list
+
+  val is_extremal : t -> Vertex.t -> bool
+
+  val is_extremalR : t -> Vertex.t -> bool
+
+  val add : t -> string -> block -> unit
+
+  val get : t -> Vertex.t -> block
+
+  val connect : t -> ?label:edge_label -> Vertex.t -> Vertex.t -> unit
+
+  val get_blocks : t -> (Vertex.t, block) Hashtbl.t
+
+  val get_func_id : t -> Vertex.t -> string
+
+  val extremal : t -> Vertex.t -> unit
+
+  val extremalR : t -> Vertex.t -> unit
+
+  val labels : t -> Set.M(Label).t
+
+  val dot_output : t -> string -> unit
+
+  val display_with_gv : t -> unit
+
+  val show : t -> unit
+
+  val generate_from_program : program -> t
+end
+
+module type InterFlowGraph = sig
+  include FlowGraph
+
+  val inter_flow : t -> (Vertex.t * Vertex.t * Vertex.t * Vertex.t) list
+  (* TODO: val callees : t -> int -> int list *)
+end
+
+module Make_cfg : functor
+  (E : Expr.S)
+  (S : Softlang.S with type expr = E.t)
+  (C : Cfg_node.S with type expr = E.t)
+  (F : Flow.S
+         with type expr = E.t
+          and type program = S.program
+          and module Ast_block = S.Stmt
+          and module Cfg_block = C)
+  (P : sig
+     type t
+
+     val convert_program_to_sl : t -> S.program
    end)
-  ->
-  Sig.FlowGraph
-    with type block = N.Stmt.t
-     and type expr = N.Expr.t
-     and type program = C.program
+  -> FlowGraph with type block = C.t and type program = P.t
 
 module Make_inter_cfg : functor
-  (Sl : Scil.Softlang.S)
-  (N : Cfg_node.S with type Expr.t = Sl.Expr.t)
-  (F : Sig.Flow
-         with type Ast_block.t = Sl.Stmt.t
-          and type Cfg_block.t = N.Stmt.t)
-  (C : sig
-     type program
+  (E : Expr.S)
+  (S : Softlang.S with type expr = E.t)
+  (C : Cfg_node.S with type expr = E.t)
+  (F : Flow.S
+         with type expr = E.t
+          and type program = S.program
+          and module Ast_block = S.Stmt
+          and module Cfg_block = C)
+  (P : sig
+     type t
+
+     val convert_program_to_sl : t -> S.program
    end)
-  -> Sig.InterFlowGraph with type block = N.Stmt.t and type expr = N.Expr.t
+  -> InterFlowGraph with type block = C.t and type program = P.t

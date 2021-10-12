@@ -1,38 +1,27 @@
-open Utils
+open Base
 
 module type S = sig
   type data
 
   type t = { id : int; loc : Loc.t; data : data }
 
-  module Set : Set.S with type elt = t
-
-  module Map : Map.S with type key = t
-
-  val equal : t -> t -> bool
-
-  val compare : t -> t -> int
+  include Comparable.S with type t := t
 
   val to_string : t -> string
 
   val create : ?loc:Loc.t -> data -> t
 end
 
-module Make_collections (E : Sig.Ordered) = struct
-  module Set = Set.Make (E)
-  module Map = Map.Make (E)
-end
-
 module Make (T : sig
-  type t
+  type t [@@deriving sexp]
 
   val to_string : t -> string
 end) =
 struct
-  type data = T.t
+  type data = T.t [@@deriving sexp]
 
   module T = struct
-    type t = { id : int; loc : Loc.t; data : T.t }
+    type t = { id : int; loc : Loc.t; data : T.t } [@@deriving sexp]
 
     let equal t_1 t_2 = t_1.id = t_2.id
 
@@ -43,7 +32,7 @@ struct
   end
 
   include T
-  include Make_collections (T)
+  include Comparable.Make (T)
 
   let counter = ref (-1)
 

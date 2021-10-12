@@ -1,11 +1,11 @@
 (* TODO other contexts *)
 
-module Functional_context (L : Lattice.Sig.S) = struct
-  type t = L.property
+module Functional_context (L : S.Lattice) = struct
+  type t = L.t
 
   type label = int
 
-  type l_property = L.property
+  type l_property = L.t
 
   let to_string = L.to_string
 

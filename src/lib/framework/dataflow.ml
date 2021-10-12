@@ -1,8 +1,8 @@
 module Forward = struct
   module Make_solution
-    (L : Lattice.Sig.S)
-    (Cfg : Cfg.Sig.FlowGraph)
-    (F : S.Transfer with type vertex = Cfg.vertex and type state = L.property)
+    (L : S.Lattice)
+    (Cfg : Cfg.Flow_graph.FlowGraph)
+    (F : S.Transfer with type vertex = Cfg.Vertex.t and type state = L.t)
     (P : sig
       val graph : Cfg.t
     end) =
@@ -21,9 +21,9 @@ end
 
 module Backward = struct
   module Make_solution
-    (L : Lattice.Sig.S)
-    (Cfg : Cfg.Sig.FlowGraph)
-    (F : S.Transfer with type vertex = Cfg.vertex and type state = L.property)
+    (L : S.Lattice)
+    (Cfg : Cfg.Flow_graph.FlowGraph)
+    (F : S.Transfer with type vertex = Cfg.Vertex.t and type state = L.t)
     (P : sig
       val graph : Cfg.t
     end) =
@@ -38,19 +38,4 @@ module Backward = struct
 
     let result_to_string = L.to_string
   end
-end
-
-module FlowSensitiveAnalysis (D : sig
-  include Utils.Collections.WithCollections
-
-  val bottom_elems : Set.t
-end)
-(L : Lattice.Sig.S)
-(CfgM : Cfg.Sig.FlowGraph) (Cfg : sig
-  val instance : CfgM.t
-end) =
-struct
-  module Lattice = Lattice.Map.Make (D) (L)
-
-  let domain = CfgM.get_blocks Cfg.instance
 end

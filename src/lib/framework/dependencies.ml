@@ -1,10 +1,10 @@
 open Cfg
 
-module Common (Cfg : Sig.FlowGraph) = struct
+module Common (Cfg : Flow_graph.FlowGraph) = struct
   type g_t = Cfg.t
 end
 
-module Forward (Cfg : Sig.FlowGraph) = struct
+module Forward (Cfg : Flow_graph.FlowGraph) = struct
   include Common (Cfg)
 
   let outdep = Cfg.outflow
@@ -14,7 +14,7 @@ module Forward (Cfg : Sig.FlowGraph) = struct
   let is_extremal = Cfg.is_extremal
 end
 
-module Backward (Cfg : Sig.FlowGraph) = struct
+module Backward (Cfg : Flow_graph.FlowGraph) = struct
   include Common (Cfg)
 
   let outdep = Cfg.inflow
@@ -25,7 +25,7 @@ module Backward (Cfg : Sig.FlowGraph) = struct
 end
 
 module InterForward
-  (Cfg : Sig.FlowGraph) (M : sig
+  (Cfg : Flow_graph.FlowGraph) (M : sig
     val is_after_call : int -> bool
   end) =
 struct
@@ -39,7 +39,7 @@ struct
 end
 
 module ContextSensitiveInterForward
-  (Cfg : Sig.FlowGraph) (M : sig
+  (Cfg : Flow_graph.FlowGraph) (M : sig
     val is_call_or_exit : int -> bool
   end) =
 struct

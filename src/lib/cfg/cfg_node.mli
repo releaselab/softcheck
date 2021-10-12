@@ -1,20 +1,21 @@
+open Base
+open Scil
+
 module type S = sig
-  include Scil.Softlang.S
+  type expr
 
-  module Stmt : sig
-    type stmt =
-      | Cfg_var_decl of decl
-      | Cfg_assign of expr * expr
-      | Cfg_guard of expr
-      | Cfg_jump
-      | Cfg_call of expr * expr list
+  type stmt =
+    | Cfg_var_decl of string
+    | Cfg_assign of expr * expr
+    | Cfg_guard of expr
+    | Cfg_jump
+    | Cfg_call of expr * expr list
 
-    and t = { stmt_label : label; stmt_s : stmt }
+  and t = { stmt_label : Label.t; stmt_s : stmt }
 
-    include Utils.Collections.WithCollections with type t := t
-  end
+  include Comparable.S with type t := t
 
-  type stmt = Stmt.t
+  val to_string : t -> string
 end
 
-module Make : functor (S : Scil.Softlang.S) -> S with type Expr.t = S.Expr.t
+module Make : functor (Expr : Expr.S) -> S with type expr = Expr.t

@@ -4,11 +4,11 @@ synopsis: "A modular static analysis platform"
 maintainer: ["João Santos Reis <joao.reis@ubi.pt>"]
 authors: ["João Santos Reis <joao.reis@ubi.pt>"]
 license: "MIT"
-homepage: "https://gitlab.com/joaosreis/softcheck"
-bug-reports: "https://gitlab.com/joaosreis/softcheck/issues"
+homepage: "https://github.com/releaselab/softcheck"
+bug-reports: "https://github.com/releaselab/softcheck/issues"
 depends: [
   "dune" {>= "2.8" & build}
-  "base"
+  "core"
   "fix"
   "bitv"
   "ocamlgraph"
@@ -30,4 +30,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://gitlab.com/joaosreis/softcheck.git"
+dev-repo: "git+https://github.com/releaselab/softcheck.git"

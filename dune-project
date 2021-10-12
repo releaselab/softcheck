@@ -5,11 +5,11 @@
 (generate_opam_files true)
 
 (source
- (uri "git+https://gitlab.com/joaosreis/softcheck.git"))
+ (uri "git+https://github.com/releaselab/softcheck.git"))
 
-(bug_reports "https://gitlab.com/joaosreis/softcheck/issues")
+(bug_reports "https://github.com/releaselab/softcheck/issues")
 
-(homepage "https://gitlab.com/joaosreis/softcheck")
+(homepage "https://github.com/releaselab/softcheck")
 
 (license MIT)
 
@@ -22,7 +22,7 @@
  (synopsis "A modular static analysis platform")
  (depends
   (dune :build)
-  base
+  core
   fix
   bitv
   ocamlgraph

@@ -1,35 +1,13 @@
+open Base
+
 module type S = sig
-  type label = Label.t
+  type expr
 
-  type decl = Decl.t
+  module Stmt : Stmt.S with type expr = expr
 
-  module Expr : Sig.Expr
+  type func = string * string list * Stmt.t
 
-  type expr = Expr.t
-
-  module Stmt : sig
-    type stmt =
-      | Scil_var_decl of decl
-      | Scil_assign of expr * expr
-      | Scil_if of expr * t
-      | Scil_if_else of expr * t * t
-      | Scil_while of expr * t
-      | Scil_jump of t
-      | Scil_call of expr * expr list
-      | Scil_seq of t * t
-
-    and t = { stmt_label : label; stmt_s : stmt }
-
-    include Utils.Collections.WithCollections with type t := t
-  end
-
-  type stmt = Stmt.t
-
-  type func = string * decl list * stmt
-
-  type program = decl list * func list
+  type program = string list * func list
 end
 
-module Make : functor
-  (E : Sig.Expr)
-  -> S with type Expr.t = E.t
+module Make : functor (Expr : Expr.S) -> S with type expr = Expr.t

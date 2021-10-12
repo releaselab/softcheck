@@ -1,6 +1,7 @@
-module Cfg = Cfg
-module Cubic = Cubic
-module Framework = Framework
-module Scil = Scil
-module Lattice = Lattice
-module Utils = Utils
+module Cfg : module type of Cfg = Cfg
+
+module Cubic : module type of Cubic = Cubic
+
+module Framework : module type of Framework = Framework
+
+module Scil : module type of Scil = Scil

@@ -1,2 +1,2 @@
+open Base
 include Int
-include Utils.Collections.Make (Int)

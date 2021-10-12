@@ -1,60 +1,54 @@
-open Utils
+open Base
 open Scil
 
-module Make (S : Softlang.S) = struct
-  include S
+module type S = sig
+  type expr
 
-  module Stmt = struct
-    module T = struct
-      type stmt =
-        | Cfg_var_decl of decl
-        | Cfg_assign of expr * expr
-        | Cfg_guard of expr
-        | Cfg_jump
-        | Cfg_call of expr * expr list
+  type stmt =
+    | Cfg_var_decl of string
+    | Cfg_assign of expr * expr
+    | Cfg_guard of expr
+    | Cfg_jump
+    | Cfg_call of expr * expr list
 
-      and t = { stmt_label : label; stmt_s : stmt }
+  and t = { stmt_label : Label.t; stmt_s : stmt }
 
-      let to_string s =
-        let aux = function
-          | Cfg_var_decl v -> [%string "var %{v#Decl}"]
-          | Cfg_assign (lv, rv) -> [%string "%{lv#Expr} := %{rv#Expr}"]
-          | Cfg_guard e -> [%string "test %{e#Expr}"]
-          | Cfg_jump -> "jump"
-          | Cfg_call (f, args) ->
-            [%string
-              "%{f#Expr} %{List.to_string ~fst:\"(\" ~lst:\")\" ~sep:\", \" \
-               Expr.to_string args}"]
-        in
-        [%string "%{aux s.stmt_s} ^ %{s.stmt_label#Int}"]
+  include Comparable.S with type t := t
 
-      let compare s_1 s_2 = Int.compare s_1.stmt_label s_2.stmt_label
-
-      let equal s_1 s_2 = s_1.stmt_label = s_2.stmt_label
-    end
-
-    include T
-    include Utils.Collections.Make (T)
-  end
-
-  type stmt = Stmt.t
+  val to_string : t -> string
 end
 
-module type S = sig
-  include Scil.Softlang.S
+module Make (Expr : Expr.S) = struct
+  type expr = Expr.t
 
-  module Stmt : sig
+  module T = struct
     type stmt =
-      | Cfg_var_decl of decl
-      | Cfg_assign of expr * expr
-      | Cfg_guard of expr
+      | Cfg_var_decl of string
+      | Cfg_assign of Expr.t * Expr.t
+      | Cfg_guard of Expr.t
       | Cfg_jump
-      | Cfg_call of expr * expr list
+      | Cfg_call of Expr.t * Expr.t list
 
-    and t = { stmt_label : label; stmt_s : stmt }
+    and t = { stmt_label : Label.t; stmt_s : stmt } [@@deriving sexp]
 
-    include Utils.Collections.WithCollections with type t := t
+    let to_string s =
+      let aux = function
+        | Cfg_var_decl v -> [%string "var %{v}"]
+        | Cfg_assign (lv, rv) -> [%string "%{lv#Expr} := %{rv#Expr}"]
+        | Cfg_guard e -> [%string "test %{e#Expr}"]
+        | Cfg_jump -> "jump"
+        | Cfg_call (f, args) ->
+          Expr.to_string f ^ " " ^ "("
+          ^ List.fold_left args
+              ~f:(fun acc e -> acc ^ "," ^ Expr.to_string e)
+              ~init:""
+          ^ ")"
+      in
+      [%string "%{aux s.stmt_s} ^ %{s.stmt_label#Label}"]
+
+    let compare s_1 s_2 = Label.compare s_1.stmt_label s_2.stmt_label
   end
 
-  type stmt = Stmt.t
+  include T
+  include Comparable.Make (T)
 end

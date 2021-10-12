@@ -39,3 +39,15 @@ module type InterTransfer = sig
 
   val f2 : string -> string -> vertex -> state -> state -> state
 end
+
+module type Lattice = sig
+  type t
+
+  val bottom : t
+
+  val join : t -> t -> t
+
+  val leq : t -> t -> bool
+
+  val to_string : t -> string
+end

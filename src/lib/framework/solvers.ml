@@ -21,9 +21,9 @@ struct
 end
 
 module Make_fix
-  (Cfg : Sig.FlowGraph)
-  (L : Lattice.Sig.S)
-  (F : S.Transfer with type vertex = Cfg.vertex and type state = L.property)
+  (Cfg : Flow_graph.FlowGraph)
+  (L : S.Lattice)
+  (F : S.Transfer with type vertex = Cfg.Vertex.t and type state = L.t)
   (D : Dependencies.S with type g_t = Cfg.t) =
 struct
   type variable = Circ of int | Bullet of int
@@ -40,14 +40,14 @@ struct
           | Circ x, Circ y | Bullet x, Bullet y -> x = y
           | _ -> false
       end)
-      (L)
+      (Lattice_helper.Make (L))
 
   let generate_equations graph var state =
     match var with
     | Circ l ->
       D.indep graph l
       |> List.map (fun l' -> state (Bullet l'))
-      |> List.fold_left L.lub
+      |> List.fold_left L.join
            (if D.is_extremal graph l then F.initial_state else L.bottom)
     | Bullet l -> F.f (Cfg.get_func_id graph l) l (state (Circ l))
 
@@ -56,9 +56,9 @@ end
 
 module Make_fix_inter
   (N : Cfg_node.S)
-  (Cfg : Sig.InterFlowGraph)
-  (L : Lattice.Sig.S)
-  (F : S.InterTransfer with type vertex = Cfg.vertex and type state = L.property)
+  (Cfg : Flow_graph.InterFlowGraph)
+  (L : S.Lattice)
+  (F : S.InterTransfer with type vertex = Cfg.Vertex.t and type state = L.t)
   (D : Dependencies.S with type g_t = Cfg.t) =
 struct
   type variable = Circ of int | Bullet of int
@@ -75,14 +75,14 @@ struct
           | Circ x, Circ y | Bullet x, Bullet y -> x = y
           | _ -> false
       end)
-      (L)
+      (Lattice_helper.Make (L))
 
   let generate_equations graph var state =
     match var with
     | Circ l ->
       D.indep graph l
       |> List.map (fun l' -> state (Bullet l'))
-      |> List.fold_left L.lub
+      |> List.fold_left L.join
            (if D.is_extremal graph l then F.initial_state else L.bottom)
     | Bullet l ->
       let fid = Cfg.get_func_id graph l in
@@ -95,7 +95,7 @@ struct
              if lr = l then Some (Cfg.get_func_id graph lc, lc) else None)
         |> List.fold_left
              (fun acc (fid2, lc) ->
-               F.f2 fid fid2 l (state (Circ lc)) (state (Circ l)) |> L.lub acc)
+               F.f2 fid fid2 l (state (Circ lc)) (state (Circ l)) |> L.join acc)
              L.bottom
       else F.f (Cfg.get_func_id graph l) l (state (Circ l))
 
