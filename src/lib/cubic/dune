@@ -1,0 +1,4 @@
+(library
+ (name cubic)
+ (public_name softcheck.public)
+ (libraries cfg bitv))

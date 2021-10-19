@@ -1,0 +1,4 @@
+(library
+ (name softcheck)
+ (public_name softcheck)
+ (libraries cfg cubic framework scil))

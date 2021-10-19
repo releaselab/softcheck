@@ -1,5 +1,0 @@
-(executable
-    (name main)
-    (public_name softcheck-tip)
-    (package softcheck)
-    (libraries softcheck tip batteries cmdliner))

@@ -1,6 +1,0 @@
-dec: {dec}
-main: {main}
-foo: {foo}
-inc: {inc}
-f: {ide, dec, inc}
-ide: {ide}
