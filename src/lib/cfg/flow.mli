@@ -1,15 +1,12 @@
-open Base
+open! Core
 open Scil
 
 module type S = sig
   type expr
-
   type program
 
   module Ast_block : Stmt.S with type expr = expr
-
   module Cfg_block : Cfg_node.S with type expr = expr
-
   module Edge : Comparable.S with type t = Ast_block.t * Ast_block.t
 
   type t = {
@@ -21,11 +18,8 @@ module type S = sig
   }
 
   val init : Ast_block.t -> Ast_block.t
-
   val final : Ast_block.t -> Set.M(Ast_block).t
-
   val flow : Ast_block.t -> t
-
   val flowR : Ast_block.t -> t
 end
 

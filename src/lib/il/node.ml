@@ -1,14 +1,12 @@
-open Base
+open! Core
 
 module type S = sig
   type data
-
   type t = { id : int; loc : Loc.t; data : data }
 
   include Comparable.S with type t := t
 
   val to_string : t -> string
-
   val create : ?loc:Loc.t -> data -> t
 end
 
@@ -24,7 +22,6 @@ struct
     type t = { id : int; loc : Loc.t; data : T.t } [@@deriving sexp]
 
     let equal t_1 t_2 = t_1.id = t_2.id
-
     let compare t_1 t_2 = Int.compare t_1.id t_2.id
 
     let to_string t =

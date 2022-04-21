@@ -1,4 +1,4 @@
-open Base
+open! Core
 open Scil
 
 module type FlowGraph = sig
@@ -7,43 +7,25 @@ module type FlowGraph = sig
   module Vertex = Label
 
   type edge_label = Normal | If_true | If_false
-
   type program
-
   type t
 
   val create : unit -> t
-
   val inflow : t -> Vertex.t -> Vertex.t list
-
   val outflow : t -> Vertex.t -> Vertex.t list
-
   val is_extremal : t -> Vertex.t -> bool
-
   val is_extremalR : t -> Vertex.t -> bool
-
   val add : t -> string -> block -> unit
-
   val get : t -> Vertex.t -> block
-
   val connect : t -> ?label:edge_label -> Vertex.t -> Vertex.t -> unit
-
   val get_blocks : t -> (Vertex.t, block) Hashtbl.t
-
   val get_func_id : t -> Vertex.t -> string
-
   val extremal : t -> Vertex.t -> unit
-
   val extremalR : t -> Vertex.t -> unit
-
   val labels : t -> Set.M(Label).t
-
   val dot_output : t -> string -> unit
-
   val display_with_gv : t -> unit
-
   val show : t -> unit
-
   val generate_from_program : program -> t
 end
 

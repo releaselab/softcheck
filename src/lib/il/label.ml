@@ -1,2 +1,2 @@
-open Base
+open! Core
 include Int

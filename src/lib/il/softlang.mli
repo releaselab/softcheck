@@ -1,4 +1,4 @@
-open Base
+open! Core
 
 module type S = sig
   type expr
@@ -6,7 +6,6 @@ module type S = sig
   module Stmt : Stmt.S with type expr = expr
 
   type func = string * string list * Stmt.t
-
   type program = string list * func list
 end
 

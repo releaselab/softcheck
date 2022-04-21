@@ -1,4 +1,4 @@
-open Base
+open! Core
 
 module T = struct
   type t = { decl_name : string; decl_location : Label.t }

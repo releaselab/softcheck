@@ -7,43 +7,25 @@ module type FlowGraph = sig
   module Vertex = Label
 
   type edge_label = Normal | If_true | If_false
-
   type program
-
   type t
 
   val create : unit -> t
-
   val inflow : t -> Vertex.t -> Vertex.t list
-
   val outflow : t -> Vertex.t -> Vertex.t list
-
   val is_extremal : t -> Vertex.t -> bool
-
   val is_extremalR : t -> Vertex.t -> bool
-
   val add : t -> string -> block -> unit
-
   val get : t -> Vertex.t -> block
-
   val connect : t -> ?label:edge_label -> Vertex.t -> Vertex.t -> unit
-
   val get_blocks : t -> (Vertex.t, block) Hashtbl.t
-
   val get_func_id : t -> Vertex.t -> string
-
   val extremal : t -> Vertex.t -> unit
-
   val extremalR : t -> Vertex.t -> unit
-
   val labels : t -> Set.M(Label).t
-
   val dot_output : t -> string -> unit
-
   val display_with_gv : t -> unit
-
   val show : t -> unit
-
   val generate_from_program : program -> t
 end
 
@@ -73,7 +55,6 @@ struct
   module Vertex = Label
 
   type block = F.Cfg_block.t
-
   type edge_label = Normal | If_true | If_false [@@deriving ord]
 
   module E = struct
@@ -91,32 +72,23 @@ struct
 
   module Display (X : sig
     val label_to_subgraph : Vertex.t -> Graph.Graphviz.DotAttributes.subgraph
-
     val label_to_dot_label : Vertex.t -> string
   end) =
   struct
     include G
 
     let vertex_name = Label.to_string
-
     let graph_attributes _ = []
-
     let default_vertex_attributes _ = [ `Shape `Box; `Fontname "Courier" ]
-
     let vertex_attributes v = [ `Label (X.label_to_dot_label v) ]
-
     let default_edge_attributes _ = []
-
     let edge_attributes _ = []
-
     let get_subgraph v = Some (X.label_to_subgraph v)
   end
 
   module Wrapper = struct
     let inflow g n = G.pred g n
-
     let outflow g n = G.succ g n
-
     let is_extremal exts l = List.mem exts l ~equal:V.equal
 
     let add g b_ht f_ht func_id n =
@@ -146,13 +118,13 @@ struct
       Out_channel.close oc
 
     let display_with_gv b g p =
-      let tmp_dot = Filename.temp_file "graph" ".dot" in
+      let tmp_dot = Filename_unix.temp_file "graph" ".dot" in
       dot_output b g p tmp_dot;
-      let tmp_ps = Filename.temp_file "graph" ".ps" in
+      let tmp_ps = Filename_unix.temp_file "graph" ".ps" in
       ignore
-        (Sys.command
+        (Sys_unix.command
            ("dot -Tps " ^ tmp_dot ^ " > " ^ tmp_ps ^ "; evince " ^ tmp_ps ^ " &"));
-      Sys.remove tmp_dot
+      Sys_unix.remove tmp_dot
   end
 end
 
@@ -193,25 +165,15 @@ struct
     }
 
   let get t = Hashtbl.find_exn t.blocks
-
   let inflow g = Wrapper.inflow g.graph
-
   let outflow g = Wrapper.outflow g.graph
-
   let is_extremal g = Wrapper.is_extremal g.extremals
-
   let is_extremalR g = Wrapper.is_extremal g.extremalsR
-
   let add t func_id n = Wrapper.add t.graph t.blocks t.functions func_id n
-
   let connect { graph; _ } ?(label = E.default) = Wrapper.connect graph label
-
   let get_blocks { blocks = b; _ } = b
-
   let get_func_id { functions = p; _ } = Hashtbl.find_exn p
-
   let extremal t l = t.extremals <- l :: t.extremals
-
   let extremalR t l = t.extremalsR <- l :: t.extremalsR
 
   let labels { blocks; _ } =
@@ -334,25 +296,15 @@ struct
     }
 
   let get t = Hashtbl.find_exn t.blocks
-
   let inflow g = Wrapper.inflow g.graph
-
   let outflow g = Wrapper.outflow g.graph
-
   let is_extremal g = Wrapper.is_extremal g.extremals
-
   let is_extremalR g = Wrapper.is_extremal g.extremalsR
-
   let add t func_id n = Wrapper.add t.graph t.blocks t.functions func_id n
-
   let connect { graph; _ } ?(label = E.default) = Wrapper.connect graph label
-
   let get_blocks { blocks = b; _ } = b
-
   let get_func_id { functions = p; _ } = Hashtbl.find_exn p
-
   let extremal t l = t.extremals <- l :: t.extremals
-
   let extremalR t l = t.extremalsR <- l :: t.extremalsR
 
   let labels { blocks; _ } =
@@ -368,8 +320,6 @@ struct
     Wrapper.display_with_gv b p g
 
   let show = display_with_gv
-
   let generate_from_program _ = (* TODO: *) create ()
-
   let inter_flow _ = (* TODO: *) assert false
 end
